@@ -1,6 +1,7 @@
 # 方块世界 · 网页体素沙盒
 
-> 🎮 **在线试玩**：https://a123mm.github.io/voxel-sandbox/
+> 🎮 **在线试玩**：https://voxel-sandbox-4qu.pages.dev/ （Cloudflare，自动部署）
+> 🪞 备用镜像：https://a123mm.github.io/voxel-sandbox/ （GitHub Pages）
 > 📦 源码：https://github.com/a123mm/voxel-sandbox
 
 
@@ -26,7 +27,7 @@ python3 -m http.server 8123 --bind 0.0.0.0
 | 平台 | 地址 | 说明 |
 |---|---|---|
 | GitHub Pages | https://a123mm.github.io/voxel-sandbox/ | 推送到 `main` 后 30~60 秒自动重建 |
-| Cloudflare Pages | `https://voxel-sandbox-4qu.pages.dev` | 项目已建好；当前 Cloudflare 侧对新建项目返回 500，建议在面板里「Connect to Git」重建一次 |
+| Cloudflare Pages | https://voxel-sandbox-4qu.pages.dev/ | 已接入 GitHub，`git push` 后自动构建部署 |
 
 ### Cloudflare Pages（两种方式）
 
