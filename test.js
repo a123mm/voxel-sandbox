@@ -162,7 +162,7 @@ setTimeout(() => {
     const P2 = { atlasCanvas: (window.__gameMeta||{}).atlas };
     console.log('===== 0b) 图集 =====');
     check('图集尺寸正确',
-      P2.atlasCanvas && P2.atlasCanvas.width === EXPECT[THEME] && P2.atlasCanvas.height === EXPECT[THEME] * 15,
+      P2.atlasCanvas && P2.atlasCanvas.width === EXPECT[THEME] && P2.atlasCanvas.height === EXPECT[THEME] * 16,
       P2.atlasCanvas ? P2.atlasCanvas.width + 'x' + P2.atlasCanvas.height : 'no canvas');
     if (THEME === 'round') {
       check('圆润贴图已绘制(fillRect 数)', calls.fillRect > 5000, 'fillRect=' + calls.fillRect);
@@ -286,14 +286,9 @@ setTimeout(() => {
     check('生物脚下有方块', under.every(b => b !== 0), under.join(','));
 
     console.log('===== 0r) MC 风格界面 =====');
-    const rootStyle = window.getComputedStyle(document.documentElement);
     const heartVar = document.documentElement.style.getPropertyValue('--heart-full');
     check('像素心图片已生成', /url\(/.test(heartVar), String(heartVar).slice(0, 24));
-    check('标题界面有泥土底图', /url\(/.test(document.getElementById('start').style.backgroundImage || ''));
-    const splash = document.getElementById('splash');
-    check('有 splash 文案', !!splash && splash.textContent.length > 0, splash ? splash.textContent : '');
-    check('开始按钮是 MC 样式', document.getElementById('go').className.indexOf('mcbtn') >= 0,
-      document.getElementById('go').className);
+    check('首页保持原样(无 splash)', !document.getElementById('splash'));
     check('快捷栏有 9 格', document.querySelectorAll('#hotbar .slot').length === 9);
 
     console.log('===== 0q) 打动物 =====');
@@ -326,6 +321,16 @@ setTimeout(() => {
     for (let i = 0; i < 8; i++) { lookAtMob(); M.dig(); }
     check('生物会被打倒', M.mobSnapshot()[0].dead === true || M.mobSnapshot()[0].hp <= 0,
       JSON.stringify(M.mobSnapshot()[0]));
+    check('打死会掉羊毛', (M.inv[M.B.WOOL] || 0) >= 2, '羊毛=' + (M.inv[M.B.WOOL] || 0));
+    check('打死会掉肉', (M.inv[M.B.PORK] || 0) >= 1, '肉=' + (M.inv[M.B.PORK] || 0));
+    // 猪肉:手动给一个,测试吃
+    M.inv[M.B.PORK] = 1; M.health = 10;
+    M.openBag();
+    const eatBtn = [...document.querySelectorAll('#bag .bigbtn')].find(e => /吃肉/.test(e.textContent));
+    check('背包里有吃肉按钮', !!eatBtn, eatBtn ? eatBtn.textContent.slice(0, 18) : '');
+    if (eatBtn) { eatBtn.dispatchEvent(new window.Event('pointerdown', { bubbles: true })); }
+    check('吃肉回血', M.health === 14, 'hp=' + M.health);
+    check('肉被消耗', (M.inv[M.B.PORK] || 0) === 0, '肉=' + (M.inv[M.B.PORK] || 0));
 
     console.log('===== 0n) 存档槽 / 性能面板 =====');
     check('默认 1 号槽', M.slot === 1 && M.saveKey === 'voxel_world_v3');

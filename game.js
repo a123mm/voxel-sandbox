@@ -5,15 +5,15 @@
 'use strict';
 
 var CHUNK=16, HEIGHT=32, WATER_LEVEL=8, RENDER_R=3, LOAD_R=RENDER_R+2;
-var B={ AIR:0, GRASS:1, DIRT:2, STONE:3, SAND:4, WATER:5, WOOD:6, LEAVES:7, PLANK:8, COAL:9, IRON:10, COBBLE:11, CRAFT:12, BRICK:13, GLASS:14, FLOWER:15, TALLGRASS:16, TORCH:17, SLAB_STONE:18, SLAB_WOOD:19 };
+var B={ AIR:0, GRASS:1, DIRT:2, STONE:3, SAND:4, WATER:5, WOOD:6, LEAVES:7, PLANK:8, COAL:9, IRON:10, COBBLE:11, CRAFT:12, BRICK:13, GLASS:14, FLOWER:15, TALLGRASS:16, TORCH:17, SLAB_STONE:18, SLAB_WOOD:19, WOOL:20, PORK:21 };
 var NON_OPAQUE={}; NON_OPAQUE[B.WATER]=1; NON_OPAQUE[B.GLASS]=1; NON_OPAQUE[B.FLOWER]=1; NON_OPAQUE[B.TALLGRASS]=1; NON_OPAQUE[B.TORCH]=1;
 var SOLID={};
 [B.GRASS,B.DIRT,B.STONE,B.SAND,B.WOOD,B.LEAVES,B.PLANK,B.COAL,B.IRON,B.COBBLE,B.CRAFT,B.BRICK,B.GLASS,
- B.SLAB_STONE,B.SLAB_WOOD].forEach(function(b){SOLID[b]=1;});
+ B.SLAB_STONE,B.SLAB_WOOD,B.WOOL].forEach(function(b){SOLID[b]=1;});
 var NAMES={}; NAMES[B.GRASS]='草'; NAMES[B.DIRT]='土'; NAMES[B.STONE]='石'; NAMES[B.SAND]='沙';
 NAMES[B.WOOD]='木'; NAMES[B.LEAVES]='叶'; NAMES[B.PLANK]='木板'; NAMES[B.COAL]='煤'; NAMES[B.IRON]='铁'; NAMES[B.COBBLE]='圆石'; NAMES[B.CRAFT]='工作台'; NAMES[B.BRICK]='石砖'; NAMES[B.GLASS]='玻璃';
-NAMES[B.FLOWER]='花'; NAMES[B.TALLGRASS]='草'; NAMES[B.TORCH]='火把'; NAMES[B.SLAB_STONE]='石台阶'; NAMES[B.SLAB_WOOD]='木台阶';
-var PLACEABLE=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.WOOD,B.LEAVES,B.PLANK,B.COAL,B.COBBLE,B.CRAFT,B.BRICK,B.GLASS,B.FLOWER,B.TALLGRASS,B.TORCH,B.SLAB_STONE,B.SLAB_WOOD];
+NAMES[B.FLOWER]='花'; NAMES[B.TALLGRASS]='草'; NAMES[B.TORCH]='火把'; NAMES[B.SLAB_STONE]='石台阶'; NAMES[B.SLAB_WOOD]='木台阶'; NAMES[B.WOOL]='羊毛'; NAMES[B.PORK]='肉';
+var PLACEABLE=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.WOOD,B.LEAVES,B.PLANK,B.COAL,B.COBBLE,B.CRAFT,B.BRICK,B.GLASS,B.FLOWER,B.TALLGRASS,B.TORCH,B.SLAB_STONE,B.SLAB_WOOD,B.WOOL];
 var HOTBAR_SIZE=9;
 var hotSlots=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.WOOD,B.LEAVES,B.PLANK,B.COBBLE,B.CRAFT];
 var selected=0, SAVE_KEY='voxel_world_v3', SLOT_KEY='voxel_slot', slotN=1;
@@ -370,7 +370,7 @@ try{ if(typeof window!=='undefined') window.__gameMeta={
     if(m.mesh){ m.mesh.visible=true; if(m.mesh.scale&&m.mesh.scale.set) m.mesh.scale.set(1,1,1); }
     return true; },
   tickMobs:function(dt){updateMobs(dt||0.2);},
-  isSlab:function(t){return isSlab(t);}, openCraft:function(){openCraft();},
+  isSlab:function(t){return isSlab(t);}, openCraft:function(){openCraft();}, openBag:function(){openBag();},
   collidesBox:function(x,y,z,h,ht){return collidesBox(x,y,z,h,ht);},
   key:function(c,d){keys[c]=!!d;}, tick:function(dt){updatePlayer(dt||0.016);},
   save:function(){return saveGame(true);}, load:function(){return loadGame();},
@@ -389,7 +389,7 @@ function cycleTheme(){
     location.href=(t==='round')?base:(base+'?theme='+t);
   }catch(e){}
 }
-var TILES=15, TILE_PX=(THEME==='pack'?128:(THEME==='classic'?16:32)), atlasCanvas=null, atlasTex=null;
+var TILES=16, TILE_PX=(THEME==='pack'?128:(THEME==='classic'?16:32)), atlasCanvas=null, atlasTex=null;
 var TILE_OF={};
 TILE_OF[B.GRASS]={top:0,side:1,bottom:2};
 TILE_OF[B.DIRT]={top:2,side:2,bottom:2};
@@ -406,12 +406,13 @@ TILE_OF[B.BRICK]={top:13,side:13,bottom:13};
 TILE_OF[B.GLASS]={top:14,side:14,bottom:14};
 TILE_OF[B.SLAB_STONE]={top:11,side:11,bottom:11};
 TILE_OF[B.SLAB_WOOD]={top:7,side:7,bottom:7};
+TILE_OF[B.WOOL]={top:15,side:15,bottom:15};
 var CORNER_UV=[[0,0],[0,1],[1,1],[1,0]];
 // 材质包用的语义名 → 图集槽位
 var TILE_NAME_INDEX = {
   grass_top:0, grass_side:1, dirt:2, stone:3, sand:4, tree_side:5, leaves:6,
   planks:7, tree_top:8, coal_ore:9, iron_ore:10, cobble:11,
-  workbench:12, brick:13, glass:14
+  workbench:12, brick:13, glass:14, wool:15
 };
 var PX_INSET=0.5/TILE_PX;
 function cuU(cu){ return cu ? 1-PX_INSET : PX_INSET; }
@@ -566,6 +567,23 @@ function roundBase(ti,x,y,S){
   var f=1+n1*0.24+n2*0.12+n3*0.05, bb=roundBevel(x,y,S);
   return [col[0]*f*bb, col[1]*f*bb, col[2]*f*bb];
 }
+function drawWoolTile(ctx,ti,S){
+  var oy=ti*S, base=[230,228,224];
+  for(var cy=0;cy<4;cy++) for(var cx=0;cx<4;cx++){
+    var cell=S/4, ox=cx*cell, oy2=cy*cell;
+    for(var yy=0;yy<cell;yy++) for(var xx=0;xx<cell;xx++){
+      var ex=Math.min(xx,cell-1-xx), ey=Math.min(yy,cell-1-yy);
+      var e=Math.min(ex,ey), k;
+      if(e===0) k=0.84; else if(e===1) k=0.95;
+      else if(e>=2 && xx>=2 && yy>=2) k=1.05; else k=1.0;
+      var nn=(prand(ti*77+xx*131+yy*977)-0.5)*0.04;
+      ctx.fillStyle='rgb('+Math.max(0,Math.min(255,base[0]*k*(1+nn)|0))+','
+        +Math.max(0,Math.min(255,base[1]*k*(1+nn)|0))+','
+        +Math.max(0,Math.min(255,base[2]*k*(1+nn)|0))+')';
+      ctx.fillRect(ox+xx, oy+Math.round(oy2)+yy, 1, 1);
+    }
+  }
+}
 function drawRoundAtlas(ctx){
   var S=TILE_PX, ti, x, y, c;
   for(ti=0;ti<14;ti++){
@@ -579,6 +597,7 @@ function drawRoundAtlas(ctx){
     }
   }
   drawGlassTile(ctx,14,S);
+  drawWoolTile(ctx,15,S);
 }
 function drawGlassTile(ctx,ti,S){
   var oy=ti*S, Rp=Math.max(2,Math.round(S*0.22)), x, y;
@@ -682,6 +701,7 @@ function makeAtlas(){
   ctx.fillStyle='#6e6e6a';
   ctx.fillRect(0, 13*TILE_PX+7, TILE_PX, 1); ctx.fillRect(0, 13*TILE_PX+15, TILE_PX, 1);
   ctx.fillRect(7, 13*TILE_PX+0, 1, 7);       ctx.fillRect(3, 13*TILE_PX+8, 1, 7);
+  drawNoiseTile(ctx,15,'#e6e4e0',16,913);
   } else {
     drawRoundAtlas(ctx);
   }
@@ -1334,43 +1354,51 @@ function rgbOf(hex){ return [(hex>>16)&255,(hex>>8)&255,hex&255]; }
 function makeMobTex(type, part){
   var S=32, cv=document.createElement('canvas'); cv.width=S; cv.height=S;
   var g=cv.getContext('2d'), t=MOB_TYPES[type], base=rgbOf(t.body);
-  function px(x,y,c){ g.fillStyle='rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')'; g.fillRect(x,y,1,1); }
+  function px(x,y,c){ g.fillStyle='rgb('+Math.max(0,Math.min(255,c[0]|0))+','+Math.max(0,Math.min(255,c[1]|0))+','+Math.max(0,Math.min(255,c[2]|0))+')'; g.fillRect(x,y,1,1); }
   function shade(c,k){ return [c[0]*k,c[1]*k,c[2]*k]; }
+  // 底色(只加很轻的噪声,避免"雪花屏")
   for(var y=0;y<S;y++) for(var x=0;x<S;x++){
-    var n=(prand(x*131+y*977+type.length*17)-0.5);
-    var k=1+n*(type==='sheep'?0.16:0.10);
-    px(x,y,shade(base,k));
+    var n=prand(x*131+y*977+type.length*17)-0.5;
+    px(x,y,shade(base,1+n*0.05));
   }
-  if(type==='sheep'){
-    // 羊毛小卷:浅色圆点
-    for(var i=0;i<26;i++){
-      var cx=Math.floor(prand(i*7.3+1)*S), cy=Math.floor(prand(i*11.7+2)*S);
-      for(var dy=-1;dy<=1;dy++) for(var dx=-1;dx<=1;dx++){
-        if(dx*dx+dy*dy>2) continue;
-        px((cx+dx+S)%S,(cy+dy+S)%S,shade(base,1.10+prand(i*3.1)*0.06));
+  if(part==='body'){
+    if(type==='sheep'){
+      // 羊毛:4×4 个 8px 圆角毛团,团间有暗缝
+      for(var cy2=0;cy2<4;cy2++) for(var cx2=0;cx2<4;cx2++){
+        var ox=cx2*8, oy=cy2*8;
+        for(var yy=0;yy<8;yy++) for(var xx=0;xx<8;xx++){
+          var ex=Math.min(xx,7-xx), ey=Math.min(yy,7-yy);
+          var e2=Math.min(ex,ey), k2;
+          if(e2===0) k2=0.84;
+          else if(e2===1) k2=0.95;
+          else if(e2>=3 && xx>=3 && yy>=3) k2=1.05;
+          else k2=1.0;
+          px(ox+xx,oy+yy,shade(base,k2));
+        }
+      }
+    } else {
+      // 猪:几块 6×5 的深色斑
+      for(var j=0;j<3;j++){
+        var bx=5+j*9, by=6+((j*7)%16);
+        for(var yy2=0;yy2<5;yy2++) for(var xx2=0;xx2<6;xx2++)
+          px((bx+xx2)%S,(by+yy2)%S,shade(base,0.90));
       }
     }
   } else {
-    // 猪:几块深色斑
-    for(var j=0;j<7;j++){
-      var px2=Math.floor(prand(j*5.1)*S), py2=Math.floor(prand(j*9.3)*S);
-      for(var d2=-1;d2<=1;d2++) px(px2,(py2+d2+S)%S,shade(base,0.90));
-    }
-  }
-  if(part==='face'){
-    var eye=[24,24,26];
-    // 眼睛
-    for(var ey=10;ey<=13;ey++) for(var ex=6;ex<=8;ex++) px(ex,ey,eye);
-    for(var ey2=10;ey2<=13;ey2++) for(var ex2=23;ex2<=25;ex2++) px(ex2,ey2,eye);
-    px(7,10,[255,255,255]); px(24,10,[255,255,255]);
+    // 脸:眼睛 + 耳朵 + (猪)鼻子
+    var eye=[34,30,30], white=[250,250,250];
+    for(var ey=12;ey<=15;ey++) for(var ex2=7;ex2<=10;ex2++) px(ex2,ey,eye);
+    for(var ey2=12;ey2<=15;ey2++) for(var ex3=21;ex3<=24;ex3++) px(ex3,ey2,eye);
+    px(8,12,white); px(22,12,white);
+    // 耳朵
+    for(var ay=4;ay<=7;ay++) for(var ax=4;ax<=7;ax++) px(ax,ay,shade(base,0.88));
+    for(var ay2=4;ay2<=7;ay2++) for(var ax2=24;ax2<=27;ax2++) px(ax2,ay2,shade(base,0.88));
     if(type==='pig'){
-      // 猪鼻
-      for(var sy=18;sy<=23;sy++) for(var sx=11;sx<=20;sx++) px(sx,sy,shade(base,0.82));
-      px(13,20,[90,50,50]); px(18,20,[90,50,50]);
+      for(var sy=19;sy<=24;sy++) for(var sx=11;sx<=20;sx++) px(sx,sy,shade(base,0.80));
+      px(13,21,[96,54,54]); px(18,21,[96,54,54]);
     } else {
-      // 羊:嘴部淡色 + 耳朵
-      for(var my=20;my<=23;my++) for(var mx=11;mx<=20;mx++) px(mx,my,shade(base,1.05));
-      px(9,20,[120,110,105]); px(22,20,[120,110,105]);
+      for(var my=20;my<=23;my++) for(var mx=12;mx<=19;mx++) px(mx,my,shade(base,1.06));
+      px(14,21,[120,112,108]); px(17,21,[120,112,108]);
     }
   }
   var tex=new THREE.CanvasTexture(cv);
@@ -1382,7 +1410,7 @@ function mobMats(type){
   var mk=function(tex){ return new THREE.MeshBasicMaterial({map:tex,color:0xffffff}); };
   var body=mk(makeMobTex(type,'body')), face=mk(makeMobTex(type,'face')), leg=mk(makeMobTex(type,'leg'));
   var m={ body:body, head:face, leg:leg,
-          headArr:[body,body,face,body,face,body] };  // 六面:头前后都用脸
+          headArr:[body,body,body,body,face,body] };  // 六面只让 +z(正面)用脸
   MOB_MATS[type]=m; return m;
 }
 function buildMobMesh(type){
@@ -1464,7 +1492,11 @@ function hurtMob(m,dmg){
 function killMob(m){
   m.dead=true; m.deadT=0; m.hp=0;
   sfxBreak(B.LEAVES);
-  toast('打倒了'+(MOB_TYPES[m.type].name||'生物'));
+  var msg=[];
+  if(m.type==='sheep'){ invAdd(B.WOOL,2); msg.push('羊毛×2'); }
+  var mn=(m.type==='pig')?2:1;
+  invAdd(B.PORK,mn); msg.push('肉×'+mn);
+  toast('打倒了'+(MOB_TYPES[m.type].name||'生物')+'，掉落 '+msg.join('、'));
 }
 function mobBlocked(x,y,z,t){
   if(collidesBox(x,y,z,t.w*0.34,t.hgt)) return true;
@@ -1570,6 +1602,7 @@ function doBreak(){
 function doPlace(){
   var hit=raycast(6); if(!hit) return;
   var bt=hotSlots[selected];
+  if(PLACEABLE.indexOf(bt)<0){ toast(NAMES[bt]+' 不能放置(在背包里点"吃"食用)'); return; }
   // 同种半砖 → 直接叠成完整方块
   if(isSlab(bt) && getBlock(hit.x,hit.y,hit.z)===bt){
     if(invCount(bt)<=0){ toast('没有 '+NAMES[bt]+' 了'); return; }
@@ -1624,9 +1657,23 @@ function openBag(){
   var held=document.createElement('div'); held.className='ctitle';
   held.style.fontSize='11px'; held.style.opacity='.8';
   var parts=[];
-  PLACEABLE.forEach(function(t){ var n=invCount(t); if(n>0) parts.push(NAMES[t]+'×'+n); });
+  Object.keys(inv).forEach(function(k){ var n=inv[+k]; if(n>0) parts.push(NAMES[+k]+'×'+n); });
   held.textContent='当前持有:'+(parts.length?parts.join('  '):'（空）');
   p.appendChild(held);
+  if(invCount(B.PORK)>0){
+    var eat=document.createElement('div'); eat.className='bigbtn';
+    eat.textContent='吃肉×1  →  回复 4 点血(当前 '+health+'/'+maxHealth+')';
+    function doEat(e){ if(e){e.preventDefault();e.stopPropagation();}
+      if(invCount(B.PORK)<=0){ toast('没有肉了'); return; }
+      invTake(B.PORK,1);
+      health=Math.min(maxHealth, health+4); heartsUi();
+      sfxCraft(); toast('吃掉了肉，回复 4 点血');
+      openBag();
+    }
+    eat.addEventListener('pointerdown', doEat);
+    eat.addEventListener('click', doEat);
+    p.appendChild(eat);
+  }
   var sup=document.createElement('div'); sup.className='cclose';
   sup.style.background='rgba(110,190,48,.35)';
   sup.textContent='补给:木板×8 + 圆石×8';
@@ -1649,6 +1696,23 @@ function openBag(){
     grid.appendChild(d);
   });
   p.appendChild(grid);
+  if(invCount(B.PORK)>0){
+    var foodRow=document.createElement('div'); foodRow.className='ctitle';
+    foodRow.textContent='食物(点一下吃掉)'; p.appendChild(foodRow);
+    var fg=document.createElement('div'); fg.className='bag-grid';
+    var fd=document.createElement('div'); fd.className='bag-item'; fd.title='肉';
+    fd.appendChild(iconFor(B.PORK));
+    var fc=document.createElement('span'); fc.className='cnt'; fc.textContent=invCount(B.PORK); fd.appendChild(fc);
+    function eatPork(e){ if(e){e.preventDefault();e.stopPropagation();}
+      if(invCount(B.PORK)<=0) return;
+      if(health>=maxHealth){ toast('血量已满,先留着吧'); return; }
+      invTake(B.PORK,1); health=Math.min(maxHealth,health+4); heartsUi();
+      sfxCraft(); toast('吃掉了肉,回复 4 点血'); openBag();
+    }
+    fd.addEventListener('pointerdown', eatPork);
+    fd.addEventListener('click', eatPork);
+    fg.appendChild(fd); p.appendChild(fg);
+  }
   var cls=document.createElement('div'); cls.className='cclose'; cls.textContent='关闭';
   cls.addEventListener('click', function(){ closeBag(); });
   cls.addEventListener('touchstart', function(e){e.preventDefault();e.stopPropagation();closeBag();},{passive:false});
@@ -1706,6 +1770,17 @@ function loadGame(){
 
 // ===================== 方块选择栏 =====================
 function iconFor(bt){
+  if(bt===B.PORK){
+    var mc=document.createElement('canvas'); mc.width=32; mc.height=32;
+    var mg=mc.getContext('2d');
+    mg.fillStyle='#b6453f'; mg.fillRect(6,10,20,13);
+    mg.fillStyle='#e8a08f'; mg.fillRect(9,13,10,7);
+    mg.fillStyle='#f5cdb0'; mg.fillRect(19,14,5,5);
+    mg.fillStyle='#8c3229'; mg.fillRect(6,10,20,2);
+    var md=document.createElement('div'); md.className='icon';
+    md.style.backgroundImage='url('+mc.toDataURL()+')';
+    return md;
+  }
   if(isPlant(bt)){
     var pc=document.createElement('canvas'); pc.width=32; pc.height=32;
     var pg=pc.getContext('2d'); pg.imageSmoothingEnabled=false;
@@ -1866,34 +1941,6 @@ function initMcStyle(){
     var full=pixelHeartDataUrl('full'), empty=pixelHeartDataUrl('empty');
     if(full) document.documentElement.style.setProperty('--heart-full','url('+full+')');
     if(empty) document.documentElement.style.setProperty('--heart-empty','url('+empty+')');
-  }catch(e){}
-  // 标题界面的泥土底
-  try{
-    var S=32, cv=document.createElement('canvas'); cv.width=S; cv.height=S;
-    var g=cv.getContext('2d');
-    for(var y=0;y<S;y++) for(var x=0;x<S;x++){
-      var n=prand(x*131+y*977+7)*0.5+prand(x*57+y*31+3)*0.5;
-      var base=[134,98,64], k=0.82+n*0.36;
-      g.fillStyle='rgb('+(base[0]*k|0)+','+(base[1]*k|0)+','+(base[2]*k|0)+')';
-      g.fillRect(x,y,1,1);
-    }
-    for(var i=0;i<26;i++){
-      var cx=Math.floor(prand(i*7.3)*S), cy=Math.floor(prand(i*11.7)*S);
-      g.fillStyle='rgba(90,64,40,0.55)'; g.fillRect(cx,cy,2,1);
-    }
-    var url=cv.toDataURL();
-    var st=document.getElementById('start');
-    if(st&&url) st.style.backgroundImage='url('+url+')';
-  }catch(e){}
-  // splash 文案
-  try{
-    var list=['纯手工打造!','也能在手机上玩!','没有 Mojang 素材!','小心溺水!','火把要插对地方!',
-              '羊和猪都会跑!','BFS 光照!','三套材质任选!','按 ESC 有菜单!','试试台阶!'];
-    var el=document.getElementById('splash');
-    if(el){
-      el.textContent=list[Math.floor(Math.random()*list.length)];
-      el.style.color=(Math.random()<0.5)?'#ffff3f':'#ff5f5f';
-    }
   }catch(e){}
 }
 try{ if(document.readyState!=='loading') initMcStyle(); else document.addEventListener('DOMContentLoaded',initMcStyle); }catch(e){}

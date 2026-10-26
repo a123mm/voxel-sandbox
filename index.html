@@ -133,28 +133,12 @@
   #bMenu{ right:24px; top:148px; width:58px; height:42px; font-size:11px; }
 
   /* 标题界面 */
-  #start{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
-          justify-content:center; color:#fff; pointer-events:auto; z-index:90;
-          background-color:#5a4632; background-size:64px 64px; background-repeat:repeat;
-          image-rendering:pixelated; text-shadow:2px 2px 0 rgba(0,0,0,.75); }
-  #start:before{ content:""; position:absolute; inset:0; background:rgba(0,0,0,.35); }
-  #start > *{ position:relative; }
-  #start h1{ font-size:30px; margin:0 0 4px; letter-spacing:6px; color:#fff;
-             text-shadow:3px 3px 0 #3a3a3a, 6px 6px 0 rgba(0,0,0,.35); }
-  #splash{ color:#ffff3f; font-size:13px; transform:rotate(-12deg); margin:2px 0 14px;
-           text-shadow:2px 2px 0 #3a3a3a; animation:splashpulse 0.7s infinite alternate; }
-  @keyframes splashpulse{ from{ transform:rotate(-12deg) scale(1); } to{ transform:rotate(-12deg) scale(1.08); } }
-  #start p{ font-size:11px; opacity:.92; margin:3px 0; text-align:center; max-width:92vw; }
-  #start .mcbtn{ margin-top:8px; min-width:240px; padding:10px 18px; font-size:14px; }
-  #start .mcbtn.primary{ background:#5a9e3a; border-color:#8ed36a #2a4f12 #2a4f12 #8ed36a; }
-  #start .mcbtn.danger{ background:#a04a3a; border-color:#d98a72 #4d1c11 #4d1c11 #d98a72; }
-  #start .crow{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; justify-content:center; }
-  #start .crow button{ padding:8px 12px; font-size:12px; }
-  .mcbtn{ background:var(--mc-slot); color:#fff; text-shadow:2px 2px 0 #333;
-          border:2px solid; border-color:var(--mc-dark) #fff #fff var(--mc-dark);
-          font-family:inherit; cursor:pointer; }
-  .mcbtn:hover{ background:var(--mc-slot-hi); }
-  .mcbtn:active{ border-color:#fff var(--mc-dark) var(--mc-dark) #fff; }
+  #start { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
+           justify-content:center; background:rgba(0,0,0,.55); color:#fff; pointer-events:auto; }
+  #start h1 { font-size:22px; margin-bottom:8px; letter-spacing:2px; }
+  #start p  { font-size:13px; opacity:.9; margin:3px 0; }
+  #start button { margin-top:16px; padding:12px 34px; font-size:16px; border:0; border-radius:8px;
+                  background:#6abe30; color:#fff; font-weight:700; }
 
   @media (max-width:520px){
     .slot{ width:34px; height:34px; }
@@ -165,11 +149,9 @@
     #airbar{ bottom:84px; width:110px; }
     #minimap{ width:92px; height:92px; top:70px; }
     #perf{ top:172px; }
-    #start h1{ font-size:22px; letter-spacing:3px; }
-    #start p{ font-size:10px; }
-    #start .mcbtn{ min-width:200px; font-size:13px; }
     #info{ font-size:10px; }
   }
+
   #err{ position:absolute; left:10px; right:10px; top:50%; transform:translateY(-50%);
         background:rgba(150,0,0,.92); color:#fff; font-size:11px; padding:12px;
         border:2px solid #000; display:none; white-space:pre-wrap; pointer-events:auto; z-index:120; }
@@ -235,7 +217,6 @@
 </div>
 <div id="start">
   <h1>方块世界</h1>
-  <div id="splash">纯手工打造!</div>
   <p>原创体素沙盒 · 非 Minecraft 复刻</p>
   <p>昼夜循环 · 血量/摔落/溺水 · 树与花草 · 火把泛光 · 羊和猪 · 台阶 · 小地图</p>
   <p>桌面:WASD 移动 · Ctrl 冲刺 · 空格跳 · 鼠标看 · 按住左键挖 / 右键放 · 1~9 换方块 · F 飞行 · ESC 暂停</p>
@@ -246,16 +227,14 @@
     · 经典包:Minetest 默认材质(CC BY-SA 3.0) · 原创体素沙盒,非 Minecraft 复刻,不含 Mojang 素材
   </p>
   <p style="font-size:11px;opacity:.85;margin-top:12px">切换材质</p>
-  <div class="crow">
-    <button data-theme="round" class="mcbtn">圆润(原创)</button>
-    <button data-theme="pack" class="mcbtn">手绘 CC0</button>
-    <button data-theme="classic" class="mcbtn">经典 CC</button>
+  <div style="display:flex;gap:8px;margin-top:6px">
+    <button data-theme="round"   style="padding:8px 14px;font-size:12px;border-radius:8px;">圆润(原创)</button>
+    <button data-theme="pack"    style="padding:8px 14px;font-size:12px;border-radius:8px;background:#4a90d9;">手绘 CC0</button>
+    <button data-theme="classic" style="padding:8px 14px;font-size:12px;border-radius:8px;background:#7a7a7a;">经典 CC</button>
   </div>
-  <button id="go" class="mcbtn primary">开始游戏</button>
-  <div class="crow">
-    <button id="loadBtn" class="mcbtn">继续上次存档</button>
-    <button id="newBtn" class="mcbtn danger">新建世界</button>
-  </div>
+  <button id="go">开始游戏</button>
+  <button id="loadBtn" style="margin-top:8px;background:#4a90d9;">继续上次存档</button>
+  <button id="newBtn" style="margin-top:8px;background:#c05050;">新建世界(清除存档)</button>
 </div>
 <script>
   window.onerror = function(m, s, l, c, e){
@@ -264,7 +243,7 @@
     el.textContent = '出错了:\n' + m + '\n' + (s||'') + ':' + l + ':' + c + (e && e.stack ? '\n' + e.stack : '');
   };
 </script>
-<script src="three.min.js?v=21"></script>
-<script src="game.js?v=21"></script>
+<script src="three.min.js?v=22"></script>
+<script src="game.js?v=22"></script>
 </body>
 </html>
