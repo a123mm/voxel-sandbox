@@ -1936,7 +1936,7 @@ function pixelHeartDataUrl(kind){
   }
   try{ return cv.toDataURL(); }catch(e){ return ''; }
 }
-var BUILD_TAG='v23';
+var BUILD_TAG='v24';
 function initMcStyle(){
   try{ var v=document.getElementById('ver'); if(v) v.textContent='build '+BUILD_TAG+' · 原创体素沙盒'; }catch(e){}
   try{
