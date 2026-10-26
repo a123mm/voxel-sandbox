@@ -133,9 +133,12 @@
   #bMenu{ right:24px; top:148px; width:58px; height:42px; font-size:11px; }
 
   /* 标题界面 */
+  /* 首页保持原来的字体与观感(不受像素风影响) */
+  #start, #start *{ font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif !important;
+                    letter-spacing:normal !important; -webkit-font-smoothing:antialiased; }
   #start { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
            justify-content:center; background:rgba(0,0,0,.55); color:#fff; pointer-events:auto; }
-  #start h1 { font-size:22px; margin-bottom:8px; letter-spacing:2px; }
+  #start h1 { font-size:22px; margin-bottom:8px; letter-spacing:2px !important; }
   #start p  { font-size:13px; opacity:.9; margin:3px 0; }
   #start button { margin-top:16px; padding:12px 34px; font-size:16px; border:0; border-radius:8px;
                   background:#6abe30; color:#fff; font-weight:700; }
@@ -233,6 +236,7 @@
     <button data-theme="classic" style="padding:8px 14px;font-size:12px;border-radius:8px;background:#7a7a7a;">经典 CC</button>
   </div>
   <button id="go">开始游戏</button>
+  <p id="ver" style="font-size:9px;opacity:.35;margin-top:14px"></p>
   <button id="loadBtn" style="margin-top:8px;background:#4a90d9;">继续上次存档</button>
   <button id="newBtn" style="margin-top:8px;background:#c05050;">新建世界(清除存档)</button>
 </div>
@@ -243,7 +247,7 @@
     el.textContent = '出错了:\n' + m + '\n' + (s||'') + ':' + l + ':' + c + (e && e.stack ? '\n' + e.stack : '');
   };
 </script>
-<script src="three.min.js?v=22"></script>
-<script src="game.js?v=22"></script>
+<script src="three.min.js?v=23"></script>
+<script src="game.js?v=23"></script>
 </body>
 </html>
