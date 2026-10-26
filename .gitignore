@@ -5,3 +5,6 @@ _preview/*.bin
 *.log
 .DS_Store
 node_modules/
+
+# 私人待办,不发布
+NEXT.md

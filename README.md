@@ -21,6 +21,31 @@ python3 -m http.server 8123 --bind 0.0.0.0
 
 三套材质可直接用地址切换：`?theme=round`（默认，原创圆润）/ `?theme=pack`（手绘 CC0）/ `?theme=classic`（经典 CC）。
 
+## 部署
+
+| 平台 | 地址 | 说明 |
+|---|---|---|
+| GitHub Pages | https://a123mm.github.io/voxel-sandbox/ | 推送到 `main` 后 30~60 秒自动重建 |
+| Cloudflare Pages | `https://voxel-sandbox.pages.dev` | 需在 Cloudflare 建一次项目，见下 |
+
+### Cloudflare Pages（两种方式）
+
+**A. 网页操作（最简单）**
+1. 打开 https://dash.cloudflare.com/ → Workers & Pages → Create → Pages → Connect to Git
+2. 选仓库 `a123mm/voxel-sandbox`
+3. Framework preset = `None`，Build command 留空，Build output directory = `/`
+4. Save and Deploy
+
+**B. 命令行（直接上传，不需要 Git）**
+```sh
+export CLOUDFLARE_API_TOKEN=...     # Workers/Pages:Edit 权限
+export CLOUDFLARE_ACCOUNT_ID=...
+sh deploy-cloudflare.sh
+```
+
+> 提示：`*.pages.dev` 和 `*.github.io` 在国内都可能时快时慢；
+> 想真正稳定建议绑自己的域名（在 Cloudflare 里加 DNS 记录即可）。
+
 ## 保持屏幕常亮（无 root）
 
 游戏内：**菜单 → 常亮:开**。用的是浏览器 Screen Wake Lock API，切到后台会自动释放、回到前台自动重申请。
