@@ -1,5 +1,9 @@
 # 方块世界 · 网页体素沙盒
 
+> 🎮 **在线试玩**：https://a123mm.github.io/voxel-sandbox/
+> 📦 源码：https://github.com/a123mm/voxel-sandbox
+
+
 纯前端、零构建的体素沙盒游戏：单个 HTML + 一个 JS，除本地 `three.min.js` 外无任何依赖。
 手机浏览器可直接玩，支持触摸摇杆、长按连续挖掘、独立「挖/放」按钮。
 
