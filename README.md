@@ -26,7 +26,7 @@ python3 -m http.server 8123 --bind 0.0.0.0
 | 平台 | 地址 | 说明 |
 |---|---|---|
 | GitHub Pages | https://a123mm.github.io/voxel-sandbox/ | 推送到 `main` 后 30~60 秒自动重建 |
-| Cloudflare Pages | `https://voxel-sandbox.pages.dev` | 需在 Cloudflare 建一次项目，见下 |
+| Cloudflare Pages | `https://voxel-sandbox-4qu.pages.dev` | 项目已建好；当前 Cloudflare 侧对新建项目返回 500，建议在面板里「Connect to Git」重建一次 |
 
 ### Cloudflare Pages（两种方式）
 
