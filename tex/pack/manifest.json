@@ -1,0 +1,28 @@
+{
+  "name": "Hand Painted Pack (CC0)",
+  "author": "Drummyfish",
+  "license": "CC0-1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "source": "https://content.minetest.net/packages/drummyfish/drummyfish/",
+  "upstream_note": "128x128 hand painted style texture pack for Minetest, released under CC0 1.0 (public domain).",
+  "tile_px": 128,
+  "tiles": {
+    "grass_top": "hand_painted/default_grass.png",
+    "grass_side": "hand_painted/default_grass_side.png",
+    "dirt": "hand_painted/default_dirt.png",
+    "stone": "hand_painted/default_stone.png",
+    "sand": "hand_painted/default_sand.png",
+    "tree_side": "hand_painted/default_tree.png",
+    "tree_top": "hand_painted/default_tree_top.png",
+    "leaves": "hand_painted/default_leaves.png",
+    "planks": "hand_painted/default_wood.png",
+    "cobble": "hand_painted/default_cobble.png",
+    "brick": "hand_painted/default_brick.png",
+    "glass": "hand_painted/default_glass.png"
+  },
+  "derived": {
+    "coal_ore": "pack stone + procedural coal specks",
+    "iron_ore": "pack stone + procedural iron specks",
+    "workbench": "pack planks + procedural grid overlay"
+  }
+}

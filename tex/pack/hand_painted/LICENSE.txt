@@ -1,0 +1,14 @@
+Hand Painted Pack (128x128 hand painted style texture pack for Minetest)
+Author: Drummyfish
+Source: https://content.minetest.net/packages/drummyfish/drummyfish/
+Upstream repo: https://gitlab.com/drummyfish/handpainted
+
+License: CC0 1.0 Universal (Public Domain Dedication)
+License text: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+The PNG files in this directory were extracted unmodified from the official
+ContentDB release zip of the pack. They are used here under CC0 1.0, which
+places the work in the public domain: no attribution is legally required,
+but credit is given on the game's start screen anyway.
+
+No Minecraft / Mojang assets are included or derived from in this directory.

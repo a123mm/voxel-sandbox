@@ -1,0 +1,7 @@
+# 预览用的原始像素数据(可由脚本重新生成)
+_preview/*.bin
+# 临时文件
+*.tmp
+*.log
+.DS_Store
+node_modules/
