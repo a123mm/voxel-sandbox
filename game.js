@@ -362,7 +362,13 @@ try{ if(typeof window!=='undefined') window.__gameMeta={
   get slot(){return slotN;}, useSlot:useSlot, get saveKey(){return SAVE_KEY;},
   updatePerf:function(){updatePerf();},
   get mobs(){return mobs.length;}, mobSnapshot:function(){
-    return mobs.map(function(m){return {type:m.type,x:+m.x.toFixed(2),y:+m.y.toFixed(2),z:+m.z.toFixed(2)};}); },
+    return mobs.map(function(m){return {type:m.type,x:+m.x.toFixed(2),y:+m.y.toFixed(2),z:+m.z.toFixed(2),
+      hp:m.hp,dead:!!m.dead};}); },
+  rayMob:function(d){ return rayMob(d||4); },
+  setMob:function(i,x,y,z){ if(!mobs[i]) return false; var m=mobs[i];
+    m.x=x; m.y=y; m.z=z; m.vy=0; m.kx=0; m.kz=0; m.dead=false; m.hp=6; m.timer=99;
+    if(m.mesh){ m.mesh.visible=true; if(m.mesh.scale&&m.mesh.scale.set) m.mesh.scale.set(1,1,1); }
+    return true; },
   tickMobs:function(dt){updateMobs(dt||0.2);},
   isSlab:function(t){return isSlab(t);}, openCraft:function(){openCraft();},
   collidesBox:function(x,y,z,h,ht){return collidesBox(x,y,z,h,ht);},
@@ -901,9 +907,9 @@ function updateSky(dt){
   if(typeof MOB_MATS!=='undefined'){
     for(var mk in MOB_MATS){
       var mm=MOB_MATS[mk];
-      if(mm.bodyBase) mm.body.color.setRGB(mm.bodyBase[0]*lf/255,mm.bodyBase[1]*lf/255,mm.bodyBase[2]*lf/255);
-      if(mm.headBase) mm.head.color.setRGB(mm.headBase[0]*lf/255,mm.headBase[1]*lf/255,mm.headBase[2]*lf/255);
-      if(mm.legBase)  mm.leg.color.setRGB(mm.legBase[0]*lf/255, mm.legBase[1]*lf/255, mm.legBase[2]*lf/255);
+      if(mm.body) mm.body.color.setScalar(lf);
+      if(mm.head) mm.head.color.setScalar(lf);
+      if(mm.leg)  mm.leg.color.setScalar(lf);
     }
   }
   if(starsPts){
@@ -1324,23 +1330,65 @@ var MOB_TYPES={
   sheep:{name:'羊', body:0xf0f0f0, head:0xdcdcdc, leg:0xbcbcbc, w:0.86, h:0.82, len:1.18, hgt:0.92, speed:1.05},
   pig:  {name:'猪', body:0xe4918f, head:0xd67f7d, leg:0xbf6a68, w:0.78, h:0.74, len:1.02, hgt:0.84, speed:1.35}
 };
+function rgbOf(hex){ return [(hex>>16)&255,(hex>>8)&255,hex&255]; }
+function makeMobTex(type, part){
+  var S=32, cv=document.createElement('canvas'); cv.width=S; cv.height=S;
+  var g=cv.getContext('2d'), t=MOB_TYPES[type], base=rgbOf(t.body);
+  function px(x,y,c){ g.fillStyle='rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')'; g.fillRect(x,y,1,1); }
+  function shade(c,k){ return [c[0]*k,c[1]*k,c[2]*k]; }
+  for(var y=0;y<S;y++) for(var x=0;x<S;x++){
+    var n=(prand(x*131+y*977+type.length*17)-0.5);
+    var k=1+n*(type==='sheep'?0.16:0.10);
+    px(x,y,shade(base,k));
+  }
+  if(type==='sheep'){
+    // 羊毛小卷:浅色圆点
+    for(var i=0;i<26;i++){
+      var cx=Math.floor(prand(i*7.3+1)*S), cy=Math.floor(prand(i*11.7+2)*S);
+      for(var dy=-1;dy<=1;dy++) for(var dx=-1;dx<=1;dx++){
+        if(dx*dx+dy*dy>2) continue;
+        px((cx+dx+S)%S,(cy+dy+S)%S,shade(base,1.10+prand(i*3.1)*0.06));
+      }
+    }
+  } else {
+    // 猪:几块深色斑
+    for(var j=0;j<7;j++){
+      var px2=Math.floor(prand(j*5.1)*S), py2=Math.floor(prand(j*9.3)*S);
+      for(var d2=-1;d2<=1;d2++) px(px2,(py2+d2+S)%S,shade(base,0.90));
+    }
+  }
+  if(part==='face'){
+    var eye=[24,24,26];
+    // 眼睛
+    for(var ey=10;ey<=13;ey++) for(var ex=6;ex<=8;ex++) px(ex,ey,eye);
+    for(var ey2=10;ey2<=13;ey2++) for(var ex2=23;ex2<=25;ex2++) px(ex2,ey2,eye);
+    px(7,10,[255,255,255]); px(24,10,[255,255,255]);
+    if(type==='pig'){
+      // 猪鼻
+      for(var sy=18;sy<=23;sy++) for(var sx=11;sx<=20;sx++) px(sx,sy,shade(base,0.82));
+      px(13,20,[90,50,50]); px(18,20,[90,50,50]);
+    } else {
+      // 羊:嘴部淡色 + 耳朵
+      for(var my=20;my<=23;my++) for(var mx=11;mx<=20;mx++) px(mx,my,shade(base,1.05));
+      px(9,20,[120,110,105]); px(22,20,[120,110,105]);
+    }
+  }
+  var tex=new THREE.CanvasTexture(cv);
+  tex.magFilter=THREE.NearestFilter; tex.minFilter=THREE.NearestFilter; tex.generateMipmaps=false;
+  return tex;
+}
 function mobMats(type){
   if(MOB_MATS[type]) return MOB_MATS[type];
-  var t=MOB_TYPES[type];
-  var m={
-    body:new THREE.MeshBasicMaterial({color:t.body}),
-    head:new THREE.MeshBasicMaterial({color:t.head}),
-    leg: new THREE.MeshBasicMaterial({color:t.leg}),
-    bodyBase:hex3('#'+('000000'+t.body.toString(16)).slice(-6)),
-    headBase:hex3('#'+('000000'+t.head.toString(16)).slice(-6)),
-    legBase: hex3('#'+('000000'+t.leg.toString(16)).slice(-6))
-  };
+  var mk=function(tex){ return new THREE.MeshBasicMaterial({map:tex,color:0xffffff}); };
+  var body=mk(makeMobTex(type,'body')), face=mk(makeMobTex(type,'face')), leg=mk(makeMobTex(type,'leg'));
+  var m={ body:body, head:face, leg:leg,
+          headArr:[body,body,face,body,face,body] };  // 六面:头前后都用脸
   MOB_MATS[type]=m; return m;
 }
 function buildMobMesh(type){
   var t=MOB_TYPES[type], mm=mobMats(type);
   var root=new THREE.Mesh(new THREE.BoxGeometry(t.w,t.h,t.len), mm.body);
-  var head=new THREE.Mesh(new THREE.BoxGeometry(t.w*0.72,t.h*0.72,t.w*0.72), mm.head);
+  var head=new THREE.Mesh(new THREE.BoxGeometry(t.w*0.72,t.h*0.72,t.w*0.72), mm.headArr);
   head.position.set(0,t.h*0.2,t.len*0.5+t.w*0.3);
   root.add(head);
   for(var i=0;i<4;i++){
@@ -1373,8 +1421,50 @@ function initMobs(){
     var mesh=buildMobMesh(type);
     scene.add(mesh);
     mobs.push({type:type,x:sp.x,y:sp.y,z:sp.z,yaw:Math.random()*6.283,vy:0,
-               walk:false,timer:Math.random()*2.5,mesh:mesh});
+               walk:false,timer:Math.random()*2.5,mesh:mesh,hp:6,kx:0,kz:0,dead:false,deadT:0});
   }
+}
+function rayAABB(ox,oy,oz,dx,dy,dz,minx,miny,minz,maxx,maxy,maxz){
+  var tmin=0, tmax=1e9;
+  var o=[ox,oy,oz], d=[dx,dy,dz], mn=[minx,miny,minz], mx=[maxx,maxy,maxz];
+  for(var i=0;i<3;i++){
+    if(Math.abs(d[i])<1e-8){ if(o[i]<mn[i]||o[i]>mx[i]) return -1; continue; }
+    var t1=(mn[i]-o[i])/d[i], t2=(mx[i]-o[i])/d[i];
+    if(t1>t2){ var tt=t1; t1=t2; t2=tt; }
+    if(t1>tmin) tmin=t1;
+    if(t2<tmax) tmax=t2;
+    if(tmin>tmax) return -1;
+  }
+  return tmin;
+}
+// 视线捡取生物
+function rayMob(maxDist){
+  var cp=Math.cos(player.pitch), sp=Math.sin(player.pitch);
+  var dx=-Math.sin(player.yaw)*cp, dy=sp, dz=-Math.cos(player.yaw)*cp;
+  var ox=camera.position.x, oy=camera.position.y, oz=camera.position.z;
+  var best=null;
+  for(var i=0;i<mobs.length;i++){
+    var m=mobs[i]; if(m.dead) continue;
+    var t=MOB_TYPES[m.type];
+    var hx=t.w*0.55, hy=t.h*0.62, hz=t.len*0.55, cy=m.y+t.h*0.62+0.02;
+    var hit=rayAABB(ox,oy,oz,dx,dy,dz, m.x-hx, cy-hy, m.z-hz, m.x+hx, cy+hy, m.z+hz);
+    if(hit>=0 && hit<=maxDist && (!best||hit<best.t)) best={mob:m,t:hit};
+  }
+  return best;
+}
+function hurtMob(m,dmg){
+  if(!m||m.dead) return;
+  m.hp-=dmg;
+  var dx=m.x-player.pos.x, dz=m.z-player.pos.z, d=Math.hypot(dx,dz)||1;
+  m.kx=dx/d*4.2; m.kz=dz/d*4.2; m.vy=3.8;
+  m.walk=true; m.timer=0.7; m.yaw=Math.atan2(dx,dz);
+  sfxHurt();
+  if(m.hp<=0) killMob(m);
+}
+function killMob(m){
+  m.dead=true; m.deadT=0; m.hp=0;
+  sfxBreak(B.LEAVES);
+  toast('打倒了'+(MOB_TYPES[m.type].name||'生物'));
 }
 function mobBlocked(x,y,z,t){
   if(collidesBox(x,y,z,t.w*0.34,t.hgt)) return true;
@@ -1391,6 +1481,25 @@ function updateMobs(dt){
   var p=player.pos;
   for(var i=0;i<mobs.length;i++){
     var m=mobs[i], t=MOB_TYPES[m.type];
+    if(m.dead){
+      m.deadT+=dt;
+      if(m.mesh){
+        var sc=Math.max(0,1-m.deadT/0.55);
+        if(m.mesh.scale&&m.mesh.scale.set) m.mesh.scale.set(sc,sc,sc);
+        m.mesh.visible=sc>0.02;
+      }
+      if(m.deadT>7){
+        m.dead=false; m.deadT=0; m.hp=6; m.kx=0; m.kz=0;
+        if(m.mesh){ m.mesh.visible=true; if(m.mesh.scale&&m.mesh.scale.set) m.mesh.scale.set(1,1,1); }
+        respawnMob(m);
+      }
+      continue;
+    }
+    // 击退
+    if(Math.abs(m.kx)>0.01||Math.abs(m.kz)>0.01){
+      m.x+=m.kx*dt; m.z+=m.kz*dt;
+      m.kx*=0.86; m.kz*=0.86;
+    }
     var dx=m.x-p.x, dz=m.z-p.z, dist=Math.hypot(dx,dz);
     if(dist<3.4 && dist>0.01){ m.yaw=Math.atan2(dx,dz); m.walk=true; m.timer=Math.max(m.timer,0.7); }
     m.timer-=dt;
@@ -1444,7 +1553,15 @@ function updateHighlight(){
   highlight.position.set(hit.x+0.5,hit.y+0.5,hit.z+0.5);
 }
 function doBreak(){
-  var hit=raycast(6); if(!hit||hit.y<=0) return;
+  var hit=raycast(6);
+  var mb=rayMob(4.0);
+  var blockT=1e9;
+  if(hit){
+    var ox=camera.position.x, oy=camera.position.y, oz=camera.position.z;
+    blockT=Math.hypot(hit.x+0.5-ox,hit.y+0.5-oy,hit.z+0.5-oz)-0.8;
+  }
+  if(mb && mb.t<blockT){ hurtMob(mb.mob,3); return; }
+  if(!hit||hit.y<=0) return;
   var t=getBlock(hit.x,hit.y,hit.z);
   setBlock(hit.x,hit.y,hit.z,B.AIR);
   sfxBreak(t);
@@ -1704,6 +1821,82 @@ function toast(msg){
   el.textContent=msg; el.style.opacity='1';
   clearTimeout(toastTimer); toastTimer=setTimeout(function(){el.style.opacity='0';},1500);
 }
+
+// ===================== MC 风格:像素心 / 泥土标题背景 / splash =====================
+function pixelHeartDataUrl(kind){
+  var cv=document.createElement('canvas'); cv.width=9; cv.height=9;
+  var g=cv.getContext('2d');
+  // 9×9 心形(1=填充,2=高光,3=暗边)
+  var pat=[
+    '011011000',
+    '111111100',
+    '121111100',
+    '111111100',
+    '011111000',
+    '001110000',
+    '000100000'
+  ];
+  var col=kind==='empty'?['#3a1414','#4a1c1c']:['#c8231f','#ff6b63'];
+  for(var y=0;y<pat.length;y++){
+    for(var x=0;x<9;x++){
+      var c=pat[y].charAt(x)||'0';
+      if(c==='0') continue;
+      g.fillStyle=(c==='2')?col[1]:col[0];
+      g.fillRect(x,y,1,1);
+    }
+  }
+  // 描边:周围的暗色
+  var edge='rgba(0,0,0,0.55)';
+  for(var y2=0;y2<pat.length;y2++){
+    for(var x2=0;x2<9;x2++){
+      if((pat[y2].charAt(x2)||'0')!=='0') continue;
+      var near=false;
+      for(var dy=-1;dy<=1;dy++) for(var dx=-1;dx<=1;dx++){
+        var yy=y2+dy, xx=x2+dx;
+        if(yy<0||yy>=pat.length||xx<0||xx>=9) continue;
+        if((pat[yy].charAt(xx)||'0')!=='0') near=true;
+      }
+      if(near){ g.fillStyle=edge; g.fillRect(x2,y2,1,1); }
+    }
+  }
+  try{ return cv.toDataURL(); }catch(e){ return ''; }
+}
+function initMcStyle(){
+  try{
+    var full=pixelHeartDataUrl('full'), empty=pixelHeartDataUrl('empty');
+    if(full) document.documentElement.style.setProperty('--heart-full','url('+full+')');
+    if(empty) document.documentElement.style.setProperty('--heart-empty','url('+empty+')');
+  }catch(e){}
+  // 标题界面的泥土底
+  try{
+    var S=32, cv=document.createElement('canvas'); cv.width=S; cv.height=S;
+    var g=cv.getContext('2d');
+    for(var y=0;y<S;y++) for(var x=0;x<S;x++){
+      var n=prand(x*131+y*977+7)*0.5+prand(x*57+y*31+3)*0.5;
+      var base=[134,98,64], k=0.82+n*0.36;
+      g.fillStyle='rgb('+(base[0]*k|0)+','+(base[1]*k|0)+','+(base[2]*k|0)+')';
+      g.fillRect(x,y,1,1);
+    }
+    for(var i=0;i<26;i++){
+      var cx=Math.floor(prand(i*7.3)*S), cy=Math.floor(prand(i*11.7)*S);
+      g.fillStyle='rgba(90,64,40,0.55)'; g.fillRect(cx,cy,2,1);
+    }
+    var url=cv.toDataURL();
+    var st=document.getElementById('start');
+    if(st&&url) st.style.backgroundImage='url('+url+')';
+  }catch(e){}
+  // splash 文案
+  try{
+    var list=['纯手工打造!','也能在手机上玩!','没有 Mojang 素材!','小心溺水!','火把要插对地方!',
+              '羊和猪都会跑!','BFS 光照!','三套材质任选!','按 ESC 有菜单!','试试台阶!'];
+    var el=document.getElementById('splash');
+    if(el){
+      el.textContent=list[Math.floor(Math.random()*list.length)];
+      el.style.color=(Math.random()<0.5)?'#ffff3f':'#ff5f5f';
+    }
+  }catch(e){}
+}
+try{ if(document.readyState!=='loading') initMcStyle(); else document.addEventListener('DOMContentLoaded',initMcStyle); }catch(e){}
 
 // ===================== 屏幕常亮(Screen Wake Lock API)=====================
 var wakeLockOn=true, wakeLockObj=null, wakeLockPending=false;

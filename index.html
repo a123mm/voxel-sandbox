@@ -5,116 +5,174 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>方块世界 Voxel Sandbox</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body { width:100%; height:100%; overflow:hidden; background:#87ceeb; touch-action:none;
-               font-family:system-ui,-apple-system,"PingFang SC",sans-serif; user-select:none; }
-  canvas { display:block; }
-  #hud { position:fixed; inset:0; pointer-events:none; }
-  #cross { position:absolute; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px; opacity:.85; }
-  #cross:before,#cross:after { content:""; position:absolute; background:#fff; box-shadow:0 0 2px #000; }
-  #cross:before { left:10px; top:0; width:2px; height:22px; }
-  #cross:after  { top:10px; left:0; height:2px; width:22px; }
-  #info { position:absolute; left:10px; top:10px; color:#fff; font-size:12px; line-height:1.6;
-          text-shadow:0 1px 2px rgba(0,0,0,.8); }
-  #hearts { position:absolute; left:50%; bottom:66px; transform:translateX(-50%);
-            display:flex; gap:1px; font-size:18px; line-height:1; pointer-events:none;
-            text-shadow:0 1px 2px rgba(0,0,0,.9); }
-  .hpb { position:relative; color:#4a1c1a; }
-  .hpb .hpf { position:absolute; left:0; top:0; overflow:hidden; white-space:nowrap; color:#e8402f; }
-  #airbar { position:absolute; left:50%; bottom:92px; transform:translateX(-50%);
-            width:130px; height:6px; background:rgba(0,0,0,.55); border-radius:3px;
-            display:none; pointer-events:none; overflow:hidden; }
-  #airbar i { display:block; height:100%; width:100%;
-              background:linear-gradient(90deg,#43b6ff,#a9ecff); }
-  #pause { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-           width:min(92vw,430px); background:rgba(20,20,24,.97); border:2px solid rgba(255,255,255,.28);
-           border-radius:14px; padding:14px; display:none; pointer-events:auto; color:#fff; z-index:70; }
-  #pause .ptitle { font-size:15px; text-align:center; margin-bottom:10px; letter-spacing:3px; opacity:.95; }
-  #pause .prow { display:flex; gap:6px; align-items:center; justify-content:center; margin-bottom:7px; flex-wrap:wrap; }
-  #pause button { padding:9px 12px; font-size:12px; border:0; border-radius:8px;
-                  background:rgba(255,255,255,.16); color:#fff; font-family:inherit; }
-  #pause button:active { background:rgba(255,255,255,.30); }
-  #pause button.on { background:rgba(110,190,48,.75); }
-  #pause .plab { font-size:11px; opacity:.6; }
-  #pause #rdVal { font-size:13px; min-width:18px; text-align:center; }
-  #bMenu { right:24px; top:148px; width:56px; height:40px; font-size:11px; border-radius:8px; }
-  #death { position:absolute; inset:0; display:none; flex-direction:column; align-items:center;
-           justify-content:center; background:rgba(120,0,0,.45); color:#fff; font-size:26px;
-           letter-spacing:6px; z-index:80; pointer-events:none; text-shadow:0 2px 8px #000; }
-  #perf { position:absolute; left:10px; top:194px; display:none; font-size:10px; line-height:1.5;
-          color:#9fe8a0; background:rgba(0,0,0,.5); padding:5px 7px; border-radius:6px;
-          pointer-events:none; font-family:monospace; white-space:pre; }
-  #minimap { position:absolute; left:10px; top:74px; width:112px; height:112px;
-             border-radius:8px; border:2px solid rgba(255,255,255,.45);
-             background:rgba(0,0,0,.35); pointer-events:none; }
-  #help { position:absolute; left:10px; bottom:10px; color:#fff; font-size:11px; line-height:1.5;
-          text-shadow:0 1px 2px rgba(0,0,0,.8); max-width:60vw; }
-  #start { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
-           justify-content:center; background:rgba(0,0,0,.55); color:#fff; pointer-events:auto; }
-  #start h1 { font-size:22px; margin-bottom:8px; letter-spacing:2px; }
-  #start p  { font-size:13px; opacity:.9; margin:3px 0; }
-  #start button { margin-top:16px; padding:12px 34px; font-size:16px; border:0; border-radius:8px;
-                  background:#6abe30; color:#fff; font-weight:700; }
-  #touch { position:absolute; inset:0; display:none; }
-  #stick, .btn { pointer-events: auto; }
-  #stick { position:absolute; left:24px; bottom:24px; width:120px; height:120px; border-radius:50%;
-           background:rgba(255,255,255,.15); border:2px solid rgba(255,255,255,.35); }
-  #knob  { position:absolute; left:35px; top:35px; width:50px; height:50px; border-radius:50%;
-           background:rgba(255,255,255,.45); }
-  .btn { position:absolute; border-radius:50%; background:rgba(255,255,255,.2);
-         border:2px solid rgba(255,255,255,.4); color:#fff; font-size:13px; font-weight:700;
-         display:flex; align-items:center; justify-content:center; }
-  #bJump  { right:24px; bottom:96px; width:66px; height:66px; }
-  #bBreak { right:100px; bottom:24px; width:70px; height:70px; }
-  #bPlace { right:24px; bottom:24px; width:70px; height:70px; }
-  #bFly   { right:24px; bottom:174px; width:56px; height:56px; font-size:12px; }
-  #bBag   { right:24px; top:52px; width:56px; height:40px; font-size:12px; border-radius:8px; }
-  #bTheme { right:24px; top:100px; width:56px; height:40px; font-size:11px; border-radius:8px;
-            background:rgba(110,190,48,.35); border-color:rgba(110,190,48,.8); }
+  :root{
+    --mc-bg:#3a3a3a; --mc-panel:#c6c6c6; --mc-slot:#8b8b8b; --mc-slot-hi:#a8a8a8;
+    --mc-dark:#373737; --mc-light:#ffffff; --mc-text:#ffffff; --mc-text-dark:#3a3a3a;
+    --heart-empty:none; --heart-full:none;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; overflow:hidden; background:#000;
+    font-family:ui-monospace,"Courier New",monospace; -webkit-font-smoothing:none;
+    letter-spacing:0.4px; color:var(--mc-text); user-select:none; -webkit-user-select:none; }
+  canvas{ display:block; image-rendering:pixelated; }
+  #hud{ position:fixed; inset:0; pointer-events:none; }
 
-  #hotbar { position:absolute; left:50%; bottom:12px; transform:translateX(-50%);
-            display:flex; justify-content:center; gap:2px; padding:4px;
-            border-radius:4px; background:rgba(0,0,0,.45);
-            border:2px solid rgba(255,255,255,.4);
-            box-shadow:0 3px 12px rgba(0,0,0,.5); pointer-events:auto; }
-  .slot { position:relative; width:36px; height:36px; border:2px solid rgba(0,0,0,.6);
-          border-radius:3px; background:rgba(139,139,139,.4); display:flex;
-          align-items:flex-end; justify-content:center; font-size:8px; color:#fff;
-          text-shadow:0 1px 2px #000; transition:transform .08s; }
-  .slot.sel { border-color:#fff; box-shadow:0 0 0 2px rgba(0,0,0,.75); transform:scale(1.1); z-index:2; }
-  .slot.empty { opacity:.45; }
-  .icon { width:100%; height:100%; background-size:cover; image-rendering:pixelated; border-radius:3px; }
-  .cnt { position:absolute; right:2px; bottom:0; font-size:9px; font-weight:700;
-         color:#fff; text-shadow:0 1px 2px #000; pointer-events:none; }
-  #craft { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-           width:min(92vw,400px); background:rgba(22,22,26,.95); border:2px solid rgba(255,255,255,.25);
-           border-radius:12px; padding:12px; display:none; pointer-events:auto; color:#fff; z-index:60; }
-  .ctitle { font-size:14px; text-align:center; margin-bottom:10px; opacity:.9; }
-  .recipe { display:flex; align-items:center; justify-content:center; gap:4px; padding:7px 8px;
-                   border-radius:8px; background:rgba(255,255,255,.08); margin-bottom:6px; cursor:pointer; }
-  .recipe:active { background:rgba(255,255,255,.2); }
-  .recipe.dim { opacity:.4; }
-  .rin, .rout { display:flex; align-items:center; gap:2px; font-size:12px; }
-  .cclose { text-align:center; padding:9px; margin-top:6px; border-radius:8px;
-                   background:rgba(255,255,255,.16); font-size:13px; cursor:pointer; }
-  .bigbtn { text-align:center; padding:13px 10px; margin-bottom:8px; border-radius:9px;
-            background:rgba(110,190,48,.85); color:#fff; font-size:14px; font-weight:700;
-            cursor:pointer; user-select:none; }
-  .bigbtn:active { transform:scale(.98); background:rgba(110,190,48,1); }
-  .bigbtn.off { background:rgba(120,120,120,.45); font-weight:400; }
-  #bag { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-         width:min(92vw,420px); background:rgba(22,22,26,.95); border:2px solid rgba(255,255,255,.25);
-         border-radius:12px; padding:12px; display:none; pointer-events:auto; color:#fff; z-index:60; }
-  #bag .bag-title { font-size:14px; text-align:center; margin-bottom:10px; opacity:.9; }
-  #bag .bag-grid { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
-  #bag .bag-item { position:relative; width:46px; height:46px; border:2px solid rgba(0,0,0,.6);
-                   border-radius:4px; background:rgba(139,139,139,.35); }
-  #bag .bag-item .icon { border-radius:2px; }
-  #bag .bag-close { text-align:center; padding:9px; margin-top:10px; border-radius:8px;
-                    background:rgba(255,255,255,.16); font-size:13px; cursor:pointer; }
-  #err { position:absolute; left:10px; right:10px; top:50%; transform:translateY(-50%);
-         background:rgba(180,0,0,.85); color:#fff; font-size:12px; padding:12px; border-radius:8px;
-         display:none; white-space:pre-wrap; pointer-events:auto; }
+  /* 准星 */
+  #cross{ position:absolute; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px;
+          opacity:.9; mix-blend-mode:difference; }
+  #cross:before,#cross:after{ content:""; position:absolute; background:#fff; }
+  #cross:before{ left:10px; top:0; width:2px; height:22px; }
+  #cross:after{ top:10px; left:0; height:2px; width:22px; }
+
+  /* HUD 文字 */
+  #info{ position:absolute; left:10px; top:8px; font-size:11px; line-height:1.7;
+         text-shadow:2px 2px 0 rgba(0,0,0,.8); }
+  #help{ position:absolute; left:10px; bottom:10px; font-size:10px; line-height:1.6;
+         text-shadow:2px 2px 0 rgba(0,0,0,.8); max-width:62vw; opacity:.9; }
+  #perf{ position:absolute; left:10px; top:196px; display:none; font-size:10px; line-height:1.5;
+         color:#c8ffc0; background:rgba(0,0,0,.55); border:2px solid #000; padding:5px 7px;
+         white-space:pre; }
+  #minimap{ position:absolute; left:10px; top:78px; width:112px; height:112px;
+            border:2px solid #000; box-shadow:inset 2px 2px 0 #fff, inset -2px -2px 0 #555;
+            background:rgba(0,0,0,.4); pointer-events:none; }
+
+  /* 血条(像素心) */
+  #hearts{ position:absolute; left:50%; bottom:72px; transform:translateX(-50%);
+           display:flex; gap:1px; pointer-events:none; }
+  .hpb{ position:relative; width:18px; height:18px; display:inline-block;
+        background-image:var(--heart-empty); background-size:100% 100%; background-repeat:no-repeat;
+        image-rendering:pixelated; }
+  .hpb .hpf{ position:absolute; left:0; top:0; height:100%; overflow:hidden; white-space:nowrap;
+             background-image:var(--heart-full); background-size:18px 18px; background-repeat:no-repeat;
+             background-position:left top; image-rendering:pixelated; }
+  #airbar{ position:absolute; left:50%; bottom:96px; transform:translateX(-50%);
+           width:130px; height:8px; background:#1b1b1b; border:2px solid #000;
+           box-shadow:inset 2px 2px 0 #555; display:none; overflow:hidden; }
+  #airbar i{ display:block; height:100%; width:100%;
+             background:linear-gradient(90deg,#2f8fd8,#9fe0ff); }
+
+  /* 死亡 */
+  #death{ position:absolute; inset:0; display:none; flex-direction:column; align-items:center;
+          justify-content:center; background:rgba(120,0,0,.55); z-index:80;
+          font-size:28px; letter-spacing:8px; text-shadow:3px 3px 0 #000; }
+
+  /* 快捷栏 */
+  #hotbar{ position:absolute; left:50%; bottom:10px; transform:translateX(-50%);
+           display:flex; gap:0; padding:3px; background:rgba(0,0,0,.55);
+           border:2px solid #000; box-shadow:inset 2px 2px 0 rgba(255,255,255,.35),
+           inset -2px -2px 0 rgba(0,0,0,.6); }
+  .slot{ position:relative; width:44px; height:44px; background:var(--mc-slot);
+         border:2px solid; border-color:var(--mc-dark) var(--mc-light) var(--mc-light) var(--mc-dark);
+         display:flex; align-items:center; justify-content:center; }
+  .slot.sel{ border-color:#fff; background:var(--mc-slot-hi);
+             box-shadow:0 0 0 2px #000, inset 0 0 0 2px #fff; z-index:2; }
+  .slot.empty{ opacity:.35; }
+  .icon{ width:32px; height:32px; background-size:cover; image-rendering:pixelated; }
+  .cnt{ position:absolute; right:2px; bottom:0; font-size:11px; font-weight:700; color:#fff;
+        text-shadow:2px 2px 0 #000; pointer-events:none; }
+
+  /* 通用面板(MC 灰底 + 斜面边框) */
+  #craft,#bag,#pause{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    background:var(--mc-panel); color:var(--mc-text-dark); border:3px solid #000;
+    box-shadow:inset 3px 3px 0 #fff, inset -3px -3px 0 #6b6b6b; padding:14px; display:none;
+    pointer-events:auto; z-index:60; }
+  #craft{ width:min(94vw,420px); }
+  #bag{ width:min(94vw,440px); }
+  #pause{ width:min(94vw,440px); z-index:70; }
+  .ctitle{ font-size:13px; text-align:center; margin:6px 0 10px; color:#3a3a3a; }
+  #bag .bag-title{ font-size:13px; text-align:center; margin-bottom:10px; color:#3a3a3a; }
+  #pause .ptitle{ font-size:15px; text-align:center; margin-bottom:12px; letter-spacing:4px; color:#3a3a3a; }
+  #pause .prow{ display:flex; gap:6px; align-items:center; justify-content:center; margin-bottom:8px; flex-wrap:wrap; }
+  #pause .plab{ font-size:11px; color:#555; }
+  #pause #rdVal{ font-size:13px; min-width:18px; text-align:center; color:#3a3a3a; }
+
+  .recipe{ display:flex; align-items:center; justify-content:center; gap:5px; padding:6px 8px;
+           margin-bottom:6px; cursor:pointer; background:var(--mc-slot);
+           border:2px solid; border-color:var(--mc-dark) #fff #fff var(--mc-dark);
+           color:#fff; text-shadow:2px 2px 0 #333; }
+  .recipe:active{ border-color:#fff var(--mc-dark) var(--mc-dark) #fff; }
+  .recipe.dim{ opacity:.45; }
+  .rin,.rout{ display:flex; align-items:center; gap:2px; font-size:12px; }
+
+  .cclose{ text-align:center; padding:9px; margin-top:8px; cursor:pointer;
+           background:var(--mc-slot); color:#fff; text-shadow:2px 2px 0 #333;
+           border:2px solid; border-color:var(--mc-dark) #fff #fff var(--mc-dark); }
+  .cclose:active{ border-color:#fff var(--mc-dark) var(--mc-dark) #fff; }
+
+  .bigbtn{ text-align:center; padding:11px; margin-bottom:8px; cursor:pointer;
+           background:#5a9e3a; color:#fff; text-shadow:2px 2px 0 #24400f; font-size:13px;
+           border:2px solid; border-color:#8ed36a #2a4f12 #2a4f12 #8ed36a; }
+  .bigbtn:active{ border-color:#2a4f12 #8ed36a #8ed36a #2a4f12; }
+  .bigbtn.off{ background:var(--mc-slot); color:#ddd; text-shadow:2px 2px 0 #333; border-color:var(--mc-dark) #fff #fff var(--mc-dark); }
+
+  #bag .bag-grid{ display:flex; flex-wrap:wrap; gap:5px; justify-content:center; }
+  #bag .bag-item{ position:relative; width:48px; height:48px; background:var(--mc-slot);
+                  border:2px solid; border-color:var(--mc-dark) #fff #fff var(--mc-dark); }
+  #bag .bag-item .icon{ width:36px; height:36px; margin:4px; }
+  #bag .bag-close{ text-align:center; padding:9px; margin-top:10px; cursor:pointer;
+                   background:var(--mc-slot); color:#fff; text-shadow:2px 2px 0 #333;
+                   border:2px solid; border-color:var(--mc-dark) #fff #fff var(--mc-dark); }
+
+  /* 触摸按钮 */
+  #touch{ position:absolute; inset:0; display:none; }
+  #stick,.btn{ pointer-events:auto; }
+  #stick{ position:absolute; left:24px; bottom:24px; width:120px; height:120px; border-radius:50%;
+          background:rgba(0,0,0,.30); border:2px solid rgba(255,255,255,.45); }
+  #knob{ position:absolute; left:35px; top:35px; width:50px; height:50px; border-radius:50%;
+         background:rgba(255,255,255,.45); }
+  .btn{ position:absolute; background:var(--mc-slot); color:#fff; font-size:13px; font-weight:700;
+        display:flex; align-items:center; justify-content:center; text-shadow:2px 2px 0 #333;
+        border:2px solid; border-color:var(--mc-dark) #fff #fff var(--mc-dark); }
+  .btn:active{ border-color:#fff var(--mc-dark) var(--mc-dark) #fff; }
+  #bJump{ right:24px; bottom:96px; width:66px; height:66px; }
+  #bBreak{ right:100px; bottom:24px; width:70px; height:70px; }
+  #bPlace{ right:24px; bottom:24px; width:70px; height:70px; }
+  #bFly{ right:24px; bottom:174px; width:58px; height:44px; font-size:12px; }
+  #bBag{ right:24px; top:52px; width:58px; height:42px; font-size:12px; }
+  #bTheme{ right:24px; top:100px; width:58px; height:42px; font-size:11px; }
+  #bMenu{ right:24px; top:148px; width:58px; height:42px; font-size:11px; }
+
+  /* 标题界面 */
+  #start{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
+          justify-content:center; color:#fff; pointer-events:auto; z-index:90;
+          background-color:#5a4632; background-size:64px 64px; background-repeat:repeat;
+          image-rendering:pixelated; text-shadow:2px 2px 0 rgba(0,0,0,.75); }
+  #start:before{ content:""; position:absolute; inset:0; background:rgba(0,0,0,.35); }
+  #start > *{ position:relative; }
+  #start h1{ font-size:30px; margin:0 0 4px; letter-spacing:6px; color:#fff;
+             text-shadow:3px 3px 0 #3a3a3a, 6px 6px 0 rgba(0,0,0,.35); }
+  #splash{ color:#ffff3f; font-size:13px; transform:rotate(-12deg); margin:2px 0 14px;
+           text-shadow:2px 2px 0 #3a3a3a; animation:splashpulse 0.7s infinite alternate; }
+  @keyframes splashpulse{ from{ transform:rotate(-12deg) scale(1); } to{ transform:rotate(-12deg) scale(1.08); } }
+  #start p{ font-size:11px; opacity:.92; margin:3px 0; text-align:center; max-width:92vw; }
+  #start .mcbtn{ margin-top:8px; min-width:240px; padding:10px 18px; font-size:14px; }
+  #start .mcbtn.primary{ background:#5a9e3a; border-color:#8ed36a #2a4f12 #2a4f12 #8ed36a; }
+  #start .mcbtn.danger{ background:#a04a3a; border-color:#d98a72 #4d1c11 #4d1c11 #d98a72; }
+  #start .crow{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; justify-content:center; }
+  #start .crow button{ padding:8px 12px; font-size:12px; }
+  .mcbtn{ background:var(--mc-slot); color:#fff; text-shadow:2px 2px 0 #333;
+          border:2px solid; border-color:var(--mc-dark) #fff #fff var(--mc-dark);
+          font-family:inherit; cursor:pointer; }
+  .mcbtn:hover{ background:var(--mc-slot-hi); }
+  .mcbtn:active{ border-color:#fff var(--mc-dark) var(--mc-dark) #fff; }
+
+  @media (max-width:520px){
+    .slot{ width:34px; height:34px; }
+    .icon{ width:26px; height:26px; }
+    .hpb{ width:16px; height:16px; }
+    .hpb .hpf{ background-size:16px 16px; }
+    #hearts{ bottom:62px; }
+    #airbar{ bottom:84px; width:110px; }
+    #minimap{ width:92px; height:92px; top:70px; }
+    #perf{ top:172px; }
+    #start h1{ font-size:22px; letter-spacing:3px; }
+    #start p{ font-size:10px; }
+    #start .mcbtn{ min-width:200px; font-size:13px; }
+    #info{ font-size:10px; }
+  }
+  #err{ position:absolute; left:10px; right:10px; top:50%; transform:translateY(-50%);
+        background:rgba(150,0,0,.92); color:#fff; font-size:11px; padding:12px;
+        border:2px solid #000; display:none; white-space:pre-wrap; pointer-events:auto; z-index:120; }
 </style>
 </head>
 <body>
@@ -177,6 +235,7 @@
 </div>
 <div id="start">
   <h1>方块世界</h1>
+  <div id="splash">纯手工打造!</div>
   <p>原创体素沙盒 · 非 Minecraft 复刻</p>
   <p>昼夜循环 · 血量/摔落/溺水 · 树与花草 · 火把泛光 · 羊和猪 · 台阶 · 小地图</p>
   <p>桌面:WASD 移动 · Ctrl 冲刺 · 空格跳 · 鼠标看 · 按住左键挖 / 右键放 · 1~9 换方块 · F 飞行 · ESC 暂停</p>
@@ -187,14 +246,16 @@
     · 经典包:Minetest 默认材质(CC BY-SA 3.0) · 原创体素沙盒,非 Minecraft 复刻,不含 Mojang 素材
   </p>
   <p style="font-size:11px;opacity:.85;margin-top:12px">切换材质</p>
-  <div style="display:flex;gap:8px;margin-top:6px">
-    <button data-theme="round"   style="padding:8px 14px;font-size:12px;border-radius:8px;">圆润(原创)</button>
-    <button data-theme="pack"    style="padding:8px 14px;font-size:12px;border-radius:8px;background:#4a90d9;">手绘 CC0</button>
-    <button data-theme="classic" style="padding:8px 14px;font-size:12px;border-radius:8px;background:#7a7a7a;">经典 CC</button>
+  <div class="crow">
+    <button data-theme="round" class="mcbtn">圆润(原创)</button>
+    <button data-theme="pack" class="mcbtn">手绘 CC0</button>
+    <button data-theme="classic" class="mcbtn">经典 CC</button>
   </div>
-  <button id="go">开始游戏</button>
-  <button id="loadBtn" style="margin-top:8px;background:#4a90d9;">继续上次存档</button>
-  <button id="newBtn" style="margin-top:8px;background:#c05050;">新建世界(清除存档)</button>
+  <button id="go" class="mcbtn primary">开始游戏</button>
+  <div class="crow">
+    <button id="loadBtn" class="mcbtn">继续上次存档</button>
+    <button id="newBtn" class="mcbtn danger">新建世界</button>
+  </div>
 </div>
 <script>
   window.onerror = function(m, s, l, c, e){
@@ -203,7 +264,7 @@
     el.textContent = '出错了:\n' + m + '\n' + (s||'') + ':' + l + ':' + c + (e && e.stack ? '\n' + e.stack : '');
   };
 </script>
-<script src="three.min.js?v=20"></script>
-<script src="game.js?v=20"></script>
+<script src="three.min.js?v=21"></script>
+<script src="game.js?v=21"></script>
 </body>
 </html>

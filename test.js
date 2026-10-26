@@ -285,6 +285,48 @@ setTimeout(() => {
     const under = mob1.map(m => M.getBlock(Math.floor(m.x), Math.floor(m.y) - 1, Math.floor(m.z)));
     check('生物脚下有方块', under.every(b => b !== 0), under.join(','));
 
+    console.log('===== 0r) MC 风格界面 =====');
+    const rootStyle = window.getComputedStyle(document.documentElement);
+    const heartVar = document.documentElement.style.getPropertyValue('--heart-full');
+    check('像素心图片已生成', /url\(/.test(heartVar), String(heartVar).slice(0, 24));
+    check('标题界面有泥土底图', /url\(/.test(document.getElementById('start').style.backgroundImage || ''));
+    const splash = document.getElementById('splash');
+    check('有 splash 文案', !!splash && splash.textContent.length > 0, splash ? splash.textContent : '');
+    check('开始按钮是 MC 样式', document.getElementById('go').className.indexOf('mcbtn') >= 0,
+      document.getElementById('go').className);
+    check('快捷栏有 9 格', document.querySelectorAll('#hotbar .slot').length === 9);
+
+    console.log('===== 0q) 打动物 =====');
+    // 把 0 号生物放到空地,保证测试稳定
+    const mx = 90, mz = 90;
+    const mh = M.topAt(mx, mz).h + 1;
+    for (let yy = mh; yy <= mh + 3; yy++) for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++)
+      M.setBlock(mx + dx, yy, mz + dz, 0);
+    M.setBlock(mx, mh - 1, mz, M.B.GRASS);
+    M.flushMeshes();
+    M.setMob(0, mx + 0.5, mh, mz + 0.5);
+    const mobs0 = M.mobSnapshot();
+    check('生物可被放到指定位置', mobs0[0].x === mx + 0.5 && mobs0[0].z === mz + 0.5, JSON.stringify(mobs0[0]));
+    const lookAtMob = () => {
+      const px = mx + 0.5, py = mh + 0.9, pz = mz + 0.5;
+      M.player.pos.set(px + 1.8, py - 0.2, pz);
+      const ex = M.player.pos.x, ey = M.player.pos.y + 1.62, ez = M.player.pos.z;
+      const dx2 = px - ex, dy2 = py - ey, dz2 = pz - ez;
+      M.player.yaw = Math.atan2(-dx2, -dz2);
+      M.player.pitch = Math.atan2(dy2, Math.hypot(dx2, dz2));
+      M.syncCamera();
+    };
+    lookAtMob();
+    const hpBefore = M.mobSnapshot()[0].hp;
+    const mbHit = M.rayMob(6);
+    check('视线能选中生物', !!mbHit, mbHit ? 't=' + mbHit.t.toFixed(2) : '未命中');
+    M.dig();
+    const hpAfter = M.mobSnapshot()[0].hp;
+    check('挖一下能扣生物血量', hpAfter < hpBefore, hpBefore + ' → ' + hpAfter);
+    for (let i = 0; i < 8; i++) { lookAtMob(); M.dig(); }
+    check('生物会被打倒', M.mobSnapshot()[0].dead === true || M.mobSnapshot()[0].hp <= 0,
+      JSON.stringify(M.mobSnapshot()[0]));
+
     console.log('===== 0n) 存档槽 / 性能面板 =====');
     check('默认 1 号槽', M.slot === 1 && M.saveKey === 'voxel_world_v3');
     M.useSlot(2);
