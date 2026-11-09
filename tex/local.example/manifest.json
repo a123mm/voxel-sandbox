@@ -1,0 +1,21 @@
+{
+  "name": "本地私用材质(不上传)",
+  "note": "把本文件复制成 tex/local/manifest.json,再把你的贴图放进 tex/local/。tex/local/ 已被 .gitignore 忽略,不会进仓库、也不会被部署。",
+  "tiles": {
+    "grass_top": "grass.png",
+    "grass_side": "grass_side.png",
+    "dirt": "dirt.png",
+    "stone": "stone.png",
+    "sand": "sand.png",
+    "tree_side": "log.png",
+    "tree_top": "log_top.png",
+    "leaves": "leaves.png",
+    "planks": "planks.png",
+    "cobble": "cobble.png",
+    "brick": "brick.png",
+    "glass": "glass.png",
+    "wool": "wool.png",
+    "coal_ore": "coal_ore.png",
+    "iron_ore": "iron_ore.png"
+  }
+}

@@ -713,6 +713,7 @@ function makeAtlas(){
   buildHotbar();
   if(THEME==='classic') loadClassicTextures();
   else if(THEME==='pack') loadTexturePack();
+  loadLocalTextures();   // tex/local/ 私用材质(已被 .gitignore 忽略)
   var tagEl=document.getElementById('themeTag');
   if(tagEl) tagEl.textContent='材质:'+THEME_NAME[THEME];
   var bT=document.getElementById('bTheme');
@@ -751,6 +752,50 @@ function loadClassicTextures(){
     img.src = wanted[k];
   });
   if (pending === 0) paint();
+}
+
+// ===================== 本地私用材质 tex/local/ =====================
+// 目录已被 .gitignore 忽略:只在你自己机器上生效,不会进仓库、不会被部署。
+// 需要时把 tex/local.example/manifest.json 复制成 tex/local/manifest.json,再放图片。
+var localTiles=null;
+function loadLocalTextures(){
+  if(typeof fetch!=='function') return;
+  fetch('tex/local/manifest.json').then(function(r){ return r.ok?r.json():null; })
+    .then(function(m){
+      if(!m||!m.tiles) return;
+      var IMG={}, keys=Object.keys(m.tiles), left=0;
+      keys.forEach(function(name){
+        if(TILE_NAME_INDEX[name]===undefined) return;
+        left++;
+        var img=new Image();
+        img.onload=function(){ IMG[name]=img; if(--left===0) applyLocal(IMG,true); };
+        img.onerror=function(){ if(--left===0) applyLocal(IMG,true); };
+        img.src='tex/local/'+m.tiles[name];
+      });
+      if(left===0) applyLocal(IMG,true);
+      toast('已加载本地材质'+(m.name?' · '+m.name:''));
+      // 其它主题的异步加载可能晚到,1.5 秒后再盖一次
+      setTimeout(function(){ applyLocal(IMG,false); },1500);
+    }).catch(function(){});
+}
+function applyLocal(IMG,announce){
+  if(!IMG||!Object.keys(IMG).length) return;
+  var g=atlasCanvas.getContext('2d'); g.imageSmoothingEnabled=false;
+  function put(k,ti){ if(IMG[k]) g.drawImage(IMG[k],0,ti*TILE_PX,TILE_PX,TILE_PX); }
+  put('grass_top',0); put('dirt',2); put('stone',3); put('sand',4);
+  put('tree_side',5); put('leaves',6); put('planks',7); put('tree_top',8);
+  put('cobble',11); put('brick',13); put('glass',14); put('workbench',12);
+  put('wool',15);
+  if(IMG.dirt && IMG.grass_side){
+    g.drawImage(IMG.dirt,0,TILE_PX,TILE_PX,TILE_PX);
+    g.drawImage(IMG.grass_side,0,TILE_PX,TILE_PX,TILE_PX);
+  } else put('grass_side',1);
+  if(IMG.coal_ore) put('coal_ore',9);
+  else if(IMG.stone){ g.drawImage(IMG.stone,0,9*TILE_PX,TILE_PX,TILE_PX); drawOreSpecks(g,9,TILE_PX,[36,36,38]); }
+  if(IMG.iron_ore) put('iron_ore',10);
+  else if(IMG.stone){ g.drawImage(IMG.stone,0,10*TILE_PX,TILE_PX,TILE_PX); drawOreSpecks(g,10,TILE_PX,[198,146,96]); }
+  if(atlasTex) atlasTex.needsUpdate=true;
+  buildHotbar();
 }
 
 // 材质包:tex/pack/manifest.json(包里缺的方块自动用原创圆润贴图补)

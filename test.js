@@ -39,7 +39,7 @@ window.Image = class {
 let manifest = null;
 try { manifest = JSON.parse(fs.readFileSync('tex/pack/manifest.json', 'utf8')); } catch(e){}
 window.fetch = function(url){
-  if (String(url).indexOf('manifest.json') >= 0 && manifest) {
+  if (String(url).indexOf('tex/pack/manifest.json') >= 0 && manifest) {
     return Promise.resolve({ ok: true, json: () => Promise.resolve(manifest) });
   }
   return Promise.resolve({ ok: false, json: () => Promise.resolve(null) });

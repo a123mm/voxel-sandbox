@@ -8,3 +8,6 @@ node_modules/
 
 # 私人待办,不发布
 NEXT.md
+
+# 本地私用材质(如原版贴图),绝不提交
+tex/local/
