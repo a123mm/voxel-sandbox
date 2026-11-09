@@ -760,7 +760,13 @@ function loadClassicTextures(){
 var localTiles=null;
 function loadLocalTextures(){
   if(typeof fetch!=='function') return;
-  fetch('tex/local/manifest.json').then(function(r){ return r.ok?r.json():null; })
+  fetch('tex/local/manifest.json').then(function(r){
+    if(!r.ok) return null;
+    // 静态托管常见"SPA 兜底":不存在的路径返回 index.html(200)。按类型排除,避免把 HTML 当 JSON。
+    var ct=(r.headers&&r.headers.get)?(r.headers.get('content-type')||''):'';
+    if(ct && ct.indexOf('json')<0) return null;
+    return r.json();
+  })
     .then(function(m){
       if(!m||!m.tiles) return;
       var IMG={}, keys=Object.keys(m.tiles), left=0;
