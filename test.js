@@ -119,7 +119,11 @@ window.THREE = {
   PointsMaterial: class { constructor(o){ Object.assign(this,o||{}); } },
   BufferGeometry: class { setAttribute(){} setIndex(){} dispose(){} },
   Float32BufferAttribute: class { constructor(a,n){ this.array=a; this.itemSize=n; } },
-  CanvasTexture: class { constructor(){ this.needsUpdate=false; } },
+  CanvasTexture: class {
+    constructor(){ this.needsUpdate=false; this.offset={ set(){} }; this.repeat={ set(){} }; }
+    clone(){ return new window.THREE.CanvasTexture(); }
+    dispose(){}
+  },
   Vector3: V3,
   NearestFilter: 1003, LinearFilter: 1006, LinearMipmapLinearFilter: 1008, AdditiveBlending: 2,
   ClampToEdgeWrapping: 1001, DoubleSide: 2,
@@ -284,6 +288,14 @@ setTimeout(() => {
     check('生物没掉出世界', mob1.every(m => m.y > -1 && m.y < 40), JSON.stringify(mob1[0]));
     const under = mob1.map(m => M.getBlock(Math.floor(m.x), Math.floor(m.y) - 1, Math.floor(m.z)));
     check('生物脚下有方块', under.every(b => b !== 0), under.join(','));
+
+    console.log('===== 0s) 云/手持/彩花/成就 =====');
+    check('天上有云', M.clouds > 0, '云=' + M.clouds);
+    check('有第一人称手持模型', M.hand === true);
+    check('花的三种颜色都在', !!(M.B.FLOWER && M.B.FLOWER_Y && M.B.FLOWER_B));
+    M.advance('test-adv', '测试成就', '这是副标题');
+    check('成就卡片弹出', document.querySelectorAll('#adv .adv-card').length > 0,
+      'cards=' + document.querySelectorAll('#adv .adv-card').length);
 
     console.log('===== 0r) MC 风格界面 =====');
     const heartVar = document.documentElement.style.getPropertyValue('--heart-full');

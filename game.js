@@ -5,7 +5,7 @@
 'use strict';
 
 var CHUNK=16, HEIGHT=32, WATER_LEVEL=8, RENDER_R=3, LOAD_R=RENDER_R+2;
-var B={ AIR:0, GRASS:1, DIRT:2, STONE:3, SAND:4, WATER:5, WOOD:6, LEAVES:7, PLANK:8, COAL:9, IRON:10, COBBLE:11, CRAFT:12, BRICK:13, GLASS:14, FLOWER:15, TALLGRASS:16, TORCH:17, SLAB_STONE:18, SLAB_WOOD:19, WOOL:20, PORK:21 };
+var B={ AIR:0, GRASS:1, DIRT:2, STONE:3, SAND:4, WATER:5, WOOD:6, LEAVES:7, PLANK:8, COAL:9, IRON:10, COBBLE:11, CRAFT:12, BRICK:13, GLASS:14, FLOWER:15, TALLGRASS:16, TORCH:17, SLAB_STONE:18, SLAB_WOOD:19, WOOL:20, PORK:21, FLOWER_Y:22, FLOWER_B:23 };
 var NON_OPAQUE={}; NON_OPAQUE[B.WATER]=1; NON_OPAQUE[B.GLASS]=1; NON_OPAQUE[B.FLOWER]=1; NON_OPAQUE[B.TALLGRASS]=1; NON_OPAQUE[B.TORCH]=1;
 var SOLID={};
 [B.GRASS,B.DIRT,B.STONE,B.SAND,B.WOOD,B.LEAVES,B.PLANK,B.COAL,B.IRON,B.COBBLE,B.CRAFT,B.BRICK,B.GLASS,
@@ -13,7 +13,8 @@ var SOLID={};
 var NAMES={}; NAMES[B.GRASS]='草'; NAMES[B.DIRT]='土'; NAMES[B.STONE]='石'; NAMES[B.SAND]='沙';
 NAMES[B.WOOD]='木'; NAMES[B.LEAVES]='叶'; NAMES[B.PLANK]='木板'; NAMES[B.COAL]='煤'; NAMES[B.IRON]='铁'; NAMES[B.COBBLE]='圆石'; NAMES[B.CRAFT]='工作台'; NAMES[B.BRICK]='石砖'; NAMES[B.GLASS]='玻璃';
 NAMES[B.FLOWER]='花'; NAMES[B.TALLGRASS]='草'; NAMES[B.TORCH]='火把'; NAMES[B.SLAB_STONE]='石台阶'; NAMES[B.SLAB_WOOD]='木台阶'; NAMES[B.WOOL]='羊毛'; NAMES[B.PORK]='肉';
-var PLACEABLE=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.WOOD,B.LEAVES,B.PLANK,B.COAL,B.COBBLE,B.CRAFT,B.BRICK,B.GLASS,B.FLOWER,B.TALLGRASS,B.TORCH,B.SLAB_STONE,B.SLAB_WOOD,B.WOOL];
+NAMES[B.FLOWER_Y]='黄花'; NAMES[B.FLOWER_B]='蓝花';
+var PLACEABLE=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.WOOD,B.LEAVES,B.PLANK,B.COAL,B.COBBLE,B.CRAFT,B.BRICK,B.GLASS,B.FLOWER,B.TALLGRASS,B.TORCH,B.SLAB_STONE,B.SLAB_WOOD,B.WOOL,B.FLOWER_Y,B.FLOWER_B];
 var HOTBAR_SIZE=9;
 var hotSlots=[B.GRASS,B.DIRT,B.STONE,B.SAND,B.WOOD,B.LEAVES,B.PLANK,B.COBBLE,B.CRAFT];
 var selected=0, SAVE_KEY='voxel_world_v3', SLOT_KEY='voxel_slot', slotN=1;
@@ -106,7 +107,7 @@ function genChunk(cx,cz){
     if(arr[localIdx(lx,gh,lz)]!==B.GRASS) continue;
     if(gh+1>=HEIGHT || arr[localIdx(lx,gh+1,lz)]!==B.AIR) continue;
     var rr=hash2(gx,gz,9001);
-    if(rr>0.955) set(lx,gh+1,lz,B.FLOWER);
+    if(rr>0.955) set(lx,gh+1,lz, rr>0.975?B.FLOWER_B : (rr>0.965?B.FLOWER_Y : B.FLOWER));
     else if(rr>0.80) set(lx,gh+1,lz,B.TALLGRASS);
   }
   // 树(扫描 3×3 邻区块的候选点,保证跨区块一致)
@@ -361,7 +362,10 @@ try{ if(typeof window!=='undefined') window.__gameMeta={
   get perfOn(){return perfOn;}, setPerf:setPerf,
   get slot(){return slotN;}, useSlot:useSlot, get saveKey(){return SAVE_KEY;},
   updatePerf:function(){updatePerf();},
-  get mobs(){return mobs.length;}, mobSnapshot:function(){
+  get mobs(){return mobs.length;},
+  get clouds(){return clouds.length;}, get hand(){return !!handMesh;},
+  advance:function(id,n,sub){advance(id,n,sub);},
+  mobSnapshot:function(){
     return mobs.map(function(m){return {type:m.type,x:+m.x.toFixed(2),y:+m.y.toFixed(2),z:+m.z.toFixed(2),
       hp:m.hp,dead:!!m.dead};}); },
   rayMob:function(d){ return rayMob(d||4); },
@@ -1075,7 +1079,12 @@ function aoAt(x,y,z,n,vx,vy,vz){
 }
 
 function isOpaqueBlock(t){ return t!==B.AIR && !NON_OPAQUE[t]; }
-function isPlant(t){ return t===B.FLOWER || t===B.TALLGRASS || t===B.TORCH; }
+function isPlant(t){ return t===B.FLOWER || t===B.TALLGRASS || t===B.TORCH || t===B.FLOWER_Y || t===B.FLOWER_B; }
+// 花的染色(顶点色乘上去,不额外占图集)
+var FLOWER_TINT={};
+FLOWER_TINT[B.FLOWER]=[1.00,0.55,0.70];   // 粉
+FLOWER_TINT[B.FLOWER_Y]=[0.95,0.85,0.28]; // 黄
+FLOWER_TINT[B.FLOWER_B]=[0.45,0.60,1.00]; // 蓝
 function isSlab(t){ return t===B.SLAB_STONE || t===B.SLAB_WOOD; }
 function slabFull(t){ return t===B.SLAB_STONE?B.COBBLE:B.PLANK; }
 function isTarget(x,y,z){ var t=getBlock(x,y,z); return SOLID[t]===1 || isPlant(t); }
@@ -1095,9 +1104,12 @@ function buildChunkMesh(cx,cz){
         var quads=[[[0.12,0,0.12],[0.88,0,0.88]],[[0.88,0,0.12],[0.12,0,0.88]]];
         for(var q=0;q<2;q++){
           var A=quads[q][0], Bv=quads[q][1], pb=ppos.length/3, sh3=(t===B.TORCH)?1.45:0.94;
+          var ft=FLOWER_TINT[t];
           ppos.push(x+A[0],y+A[1],z+A[2], x+Bv[0],y+Bv[1],z+Bv[2],
                     x+Bv[0],y+Bv[1]+1,z+Bv[2], x+A[0],y+A[1]+1,z+A[2]);
-          pcol.push(sh3,sh3,sh3, sh3,sh3,sh3, sh3,sh3,sh3, sh3,sh3,sh3);
+          if(ft) pcol.push(sh3*ft[0],sh3*ft[1],sh3*ft[2], sh3*ft[0],sh3*ft[1],sh3*ft[2],
+                           sh3*ft[0],sh3*ft[1],sh3*ft[2], sh3*ft[0],sh3*ft[1],sh3*ft[2]);
+          else pcol.push(sh3,sh3,sh3, sh3,sh3,sh3, sh3,sh3,sh3, sh3,sh3,sh3);
           puv.push(PLANT_INSET,pv0, 1-PLANT_INSET,pv0, 1-PLANT_INSET,pv1, PLANT_INSET,pv1);
           pind.push(pb,pb+1,pb+2, pb,pb+2,pb+3);
         }
@@ -1547,6 +1559,8 @@ function killMob(m){
   if(m.type==='sheep'){ invAdd(B.WOOL,2); msg.push('羊毛×2'); }
   var mn=(m.type==='pig')?2:1;
   invAdd(B.PORK,mn); msg.push('肉×'+mn);
+  advance('mob', ADV.mob[0], ADV.mob[1]);
+  if(m.type==='sheep') advance('wool', ADV.wool[0], ADV.wool[1]);
   toast('打倒了'+(MOB_TYPES[m.type].name||'生物')+'，掉落 '+msg.join('、'));
 }
 function mobBlocked(x,y,z,t){
@@ -1647,7 +1661,11 @@ function doBreak(){
   if(!hit||hit.y<=0) return;
   var t=getBlock(hit.x,hit.y,hit.z);
   setBlock(hit.x,hit.y,hit.z,B.AIR);
+  handSwing=1;
   sfxBreak(t);
+  if(t===B.WOOD) advance('wood', ADV.wood[0], ADV.wood[1]);
+  else if(t===B.COAL) advance('coal', ADV.coal[0], ADV.coal[1]);
+  else if(t===B.IRON) advance('iron', ADV.iron[0], ADV.iron[1]);
   if(t!==B.WATER) invAdd(t,1);
 }
 function doPlace(){
@@ -1667,6 +1685,7 @@ function doPlace(){
   var p=player.pos;
   if(!(x+1<=p.x-HALF||x>=p.x+HALF||z+1<=p.z-HALF||z>=p.z+HALF||y+1<=p.y||y>=p.y+PH)) return;
   setBlock(x,y,z,bt); invTake(bt,1); sfxPlace(bt);
+  if(bt===B.TORCH) advance('torch', ADV.torch[0], ADV.torch[1]);
 }
 // 短点:对准工作台就打开合成,否则放置方块
 function doTapAction(){
@@ -1699,6 +1718,7 @@ function openBag(){
       Object.keys(r.out).forEach(function(k){ invAdd(+k, r.out[k]); outName=NAMES[+k]+' ×'+r.out[k]; });
       toast('合成成功:'+outName);
       sfxCraft();
+      advance('craft', ADV.craft[0], ADV.craft[1]);
       openBag();
     }
     b.addEventListener('pointerdown', go);
@@ -1837,6 +1857,13 @@ function iconFor(bt){
     var pg=pc.getContext('2d'); pg.imageSmoothingEnabled=false;
     var pti=PLANT_TILE[bt]||0;
     if(plantCanvas) pg.drawImage(plantCanvas,0,pti*PLANT_PX,PLANT_PX,PLANT_PX,0,0,32,32);
+    var ftint=FLOWER_TINT[bt];
+    if(ftint&&pg.globalCompositeOperation!==undefined){
+      pg.globalCompositeOperation='multiply';
+      pg.fillStyle='rgb('+(ftint[0]*255|0)+','+(ftint[1]*255|0)+','+(ftint[2]*255|0)+')';
+      pg.fillRect(0,0,32,32);
+      pg.globalCompositeOperation='source-over';
+    }
     var pd=document.createElement('div'); pd.className='icon';
     pd.style.backgroundImage='url('+pc.toDataURL()+')';
     return pd;
@@ -1908,6 +1935,7 @@ function makeRecipeRow(r, afterCraft){
     Object.keys(r.out).forEach(function(k){ invAdd(+k, r.out[k]); outName=NAMES[+k]+' ×'+r.out[k]; });
     toast('合成成功:'+outName);
     sfxCraft();
+    advance('craft', ADV.craft[0], ADV.craft[1]);
     if(afterCraft) afterCraft();
   }
   row.addEventListener('click', doCraft);
@@ -1930,9 +1958,35 @@ function openCraft(){
 function closeCraft(){ var p=document.getElementById('craft'); if(p){ p.style.display='none'; p.innerHTML=''; } }
 function selectSlot(i){
   selected=i;
+  updateHandTile();
   var s=document.querySelectorAll('#hotbar .slot');
   for(var k=0;k<s.length;k++) s[k].className='slot'+(k===i?' sel':'');
 }
+
+// ===================== 进度/成就提示 =====================
+var ADV_KEY='voxel_adv', advDone={};
+try{ advDone=JSON.parse(localStorage.getItem(ADV_KEY)||'{}')||{}; }catch(e){ advDone={}; }
+function advance(id, name, sub){
+  if(advDone[id]) return;
+  advDone[id]=1;
+  try{ localStorage.setItem(ADV_KEY, JSON.stringify(advDone)); }catch(e){}
+  var box=document.getElementById('adv');
+  if(!box) return;
+  var d=document.createElement('div'); d.className='adv-card';
+  d.innerHTML='<div class="t">进度达成！</div><div class="n">'+name+'</div>'+(sub?'<div class="s">'+sub+'</div>':'');
+  box.appendChild(d);
+  try{ tone(880,0.06,0.005,0.12,'triangle'); }catch(e){}
+  setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 4200);
+}
+var ADV={
+  wood:['获得木头','砍下第一块原木'],
+  coal:['采掘时间','挖到第一块煤矿'],
+  iron:['来点硬的','挖到第一块铁矿'],
+  craft:['合成入门','完成第一次合成'],
+  mob:['猎手','打倒第一只动物'],
+  wool:['羊毛大户','获得羊毛'],
+  torch:['照亮世界','放下一支火把']
+};
 
 // ===================== 提示 =====================
 var toastTimer=null;
@@ -1998,7 +2052,81 @@ function initMcStyle(){
 }
 try{ if(document.readyState!=='loading') initMcStyle(); else document.addEventListener('DOMContentLoaded',initMcStyle); }catch(e){}
 
-// ===================== 屏幕常亮(Screen Wake Lock API)=====================
+// ===================== 云 =====================
+var clouds=[], cloudGeo=null, cloudMat=null, cloudT=0;
+function initClouds(){
+  cloudGeo=new THREE.BoxGeometry(1,1,1);
+  cloudMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.72,depthWrite:false});
+  for(var i=0;i<14;i++){
+    var m=new THREE.Mesh(cloudGeo,cloudMat);
+    m.scale.set(18+prand(i*3.7)*26, 2+prand(i*5.1)*1.6, 12+prand(i*7.3)*20);
+    scene.add(m);
+    clouds.push({mesh:m, x:(prand(i*11.1)-0.5)*300, y:44+prand(i*13.7)*8, z:(prand(i*17.3)-0.5)*300});
+  }
+}
+function updateClouds(dt){
+  cloudT+=dt;
+  var px=player.pos.x, pz=player.pos.z;
+  for(var i=0;i<clouds.length;i++){
+    var c=clouds[i];
+    c.x+=dt*3.4;
+    if(c.x>px+170) c.x-=340;
+    if(c.x<px-170) c.x+=340;
+    if(c.z>pz+170) c.z-=340;
+    if(c.z<pz-170) c.z+=340;
+    c.mesh.position.set(c.x, c.y, c.z);
+  }
+  if(cloudMat) cloudMat.opacity=0.72;
+}
+
+// ===================== 第一人称手持方块 =====================
+var handMesh=null, handArm=null, handMat=null, handBob=0, handSwing=0;
+function initHand(){
+  scene.add(camera);                    // 相机要在场景里,它的子节点才渲染
+  handGeo=new THREE.PlaneGeometry(0.62,0.62);
+  handMat=new THREE.MeshBasicMaterial({map:handTexture(),transparent:true,alphaTest:0.05,
+    side:THREE.DoubleSide,fog:false,depthTest:false});
+  handMesh=new THREE.Mesh(handGeo,handMat);
+  handMesh.renderOrder=10;
+  handMesh.position.set(0.42,-0.33,-0.72);
+  camera.add(handMesh);
+  var armMat=new THREE.MeshBasicMaterial({color:0xd8a27a,fog:false,depthTest:false});
+  handArm=new THREE.Mesh(new THREE.PlaneGeometry(0.16,0.46),armMat);
+  handArm.renderOrder=9;
+  handArm.position.set(0.30,-0.52,-0.78);
+  camera.add(handArm);
+  updateHandTile();
+}
+function handTexture(){
+  if(!atlasTex || typeof atlasTex.clone!=='function') return null;
+  var t=atlasTex.clone();
+  t.needsUpdate=true;
+  t.magFilter=THREE.NearestFilter; t.minFilter=THREE.NearestFilter; t.generateMipmaps=false;
+  t.repeat.set(1, 1/TILES);
+  return t;
+}
+function updateHandTile(){
+  if(!handMat||!atlasTex) return;
+  var ti=3, m=TILE_OF[hotSlots[selected]];
+  if(m) ti=(m.top!==undefined?m.top:3);
+  var old=handMat.map;
+  var t=handTexture();
+  if(t){ t.offset.set(0, 1-(ti+1)/TILES); handMat.map=t; handMat.needsUpdate=true; }
+  if(old&&old!==atlasTex&&old.dispose) old.dispose();
+}
+function updateHand(dt){
+  if(!handMesh) return;
+  handBob+=dt;
+  var p=player.pos, v=player.vel;
+  var moving=(Math.abs(v.x)+Math.abs(v.z))>0.7 && player.onGround;
+  var bob=moving?Math.sin(handBob*9)*0.018:0;
+  handSwing=Math.max(0, handSwing-dt*4);
+  handMesh.position.set(0.42+bob*0.4, -0.33+bob-handSwing*0.12, -0.72-handSwing*0.06);
+  handMesh.rotation.z=-0.18-handSwing*0.5;
+  if(handArm) handArm.position.set(0.30+bob*0.4, -0.52+bob-handSwing*0.12, -0.78);
+}
+
+// ===================== 屏幕常亮(Screen Wake Lock API)====================
 var wakeLockOn=true, wakeLockObj=null, wakeLockPending=false;
 var wakeLockSupported=!!(typeof navigator!=='undefined' && navigator.wakeLock && navigator.wakeLock.request);
 try{ if(localStorage.getItem('voxel_awake')==='0') wakeLockOn=false; }catch(e){}
@@ -2342,6 +2470,8 @@ function loop(t){
     updatePlayer(dt);
     updateSky(dt);
     updateMobs(dt);
+    updateClouds(dt);
+    updateHand(dt);
     mapAcc+=dt; if(mapAcc>=0.35){ mapAcc=0; drawMinimap(); }
     if(health>0 && health<maxHealth && nowSec()-lastHurtAt>12){
       regenAcc+=dt; if(regenAcc>4){ regenAcc=0; health=Math.min(maxHealth,health+1); heartsUi(); }
@@ -2391,6 +2521,8 @@ function init(mode){
 
   buildSky();
   updateSky(0);
+  initClouds();
+  initHand();
 
   var gg=new THREE.BoxGeometry(1.002,1.002,1.002);
   highlight=new THREE.LineSegments(new THREE.EdgesGeometry(gg),new THREE.LineBasicMaterial({color:0x000000}));
