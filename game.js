@@ -364,6 +364,7 @@ try{ if(typeof window!=='undefined') window.__gameMeta={
   updatePerf:function(){updatePerf();},
   get mobs(){return mobs.length;},
   get clouds(){return clouds.length;}, get hand(){return !!handMesh;},
+  get landscape(){return isLandscapeLocked();}, setLandscape:setLandscape,
   advance:function(id,n,sub){advance(id,n,sub);},
   mobSnapshot:function(){
     return mobs.map(function(m){return {type:m.type,x:+m.x.toFixed(2),y:+m.y.toFixed(2),z:+m.z.toFixed(2),
@@ -2126,6 +2127,32 @@ function updateHand(dt){
   if(handArm) handArm.position.set(0.30+bob*0.4, -0.52+bob-handSwing*0.12, -0.78);
 }
 
+// ===================== 横屏 =====================
+function setLandscape(on){
+  try{
+    var el=document.documentElement;
+    if(on){
+      var req=el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen;
+      var after=function(){
+        try{
+          if(screen.orientation&&screen.orientation.lock){
+            var p=screen.orientation.lock('landscape');
+            if(p&&p.catch) p.catch(function(){ toast('请手动把手机横过来(浏览器不允许锁定)'); });
+          } else toast('请手动把手机横过来');
+        }catch(e){ toast('请手动把手机横过来'); }
+      };
+      if(req){ var pr=req.call(el); if(pr&&pr.then) pr.then(after).catch(after); else after(); }
+      else after();
+    } else {
+      try{ if(screen.orientation&&screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
+      try{ if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen(); }catch(e){}
+    }
+  }catch(e){ toast('切换横屏失败:'+e.message); }
+}
+function isLandscapeLocked(){
+  try{ return !!(screen.orientation && screen.orientation.type && screen.orientation.type.indexOf('landscape')===0); }catch(e){ return false; }
+}
+
 // ===================== 屏幕常亮(Screen Wake Lock API)====================
 var wakeLockOn=true, wakeLockObj=null, wakeLockPending=false;
 var wakeLockSupported=!!(typeof navigator!=='undefined' && navigator.wakeLock && navigator.wakeLock.request);
@@ -2194,6 +2221,8 @@ function setPauseLabels(){
   if(b){ b.textContent='音效:'+(soundOn?'开':'关'); b.className=soundOn?'on':''; }
   b=document.querySelector('#pause [data-act="map"]');
   if(b){ b.textContent='小地图:'+(minimapOn?'开':'关'); b.className=minimapOn?'on':''; }
+  b=document.querySelector('#pause [data-act="rotate"]');
+  if(b){ b.textContent=isLandscapeLocked()?'竖屏':'横屏'; b.className=isLandscapeLocked()?'on':''; }
   b=document.querySelector('#pause [data-act="perf"]');
   if(b){ b.textContent='性能面板:'+(perfOn?'开':'关'); b.className=perfOn?'on':''; }
   b=document.querySelector('#pause [data-act="slot"]');
@@ -2285,6 +2314,7 @@ function bindPause(){
     else if(act==='fly'){ player.fly=!player.fly; player.vel.set(0,0,0); setPauseLabels(); }
     else if(act==='awake'){ setWakeLock(!wakeLockOn); }
     else if(act==='perf'){ setPerf(!perfOn); }
+    else if(act==='rotate'){ setLandscape(!isLandscapeLocked()); setTimeout(setPauseLabels,400); }
     else if(act==='slot'){ saveGame(true); useSlot(slotN>=3?1:slotN+1); try{ location.reload(); }catch(e){} }
     else if(act==='time'){ setTimeOfDay(parseFloat(v)); }
     else if(act==='rd'){ setRenderDist(RENDER_R+parseInt(v,10)); }
@@ -2515,7 +2545,7 @@ function init(mode){
                                         transparent:true,alphaTest:0.12,depthWrite:true});
   makePlantAtlas();
   matPlant=new THREE.MeshBasicMaterial({map:plantTex,vertexColors:true,side:THREE.DoubleSide,
-                                        transparent:true,alphaTest:0.45,depthWrite:true});
+                                        transparent:false,alphaTest:0.5,depthWrite:true});
   matGlow=new THREE.MeshBasicMaterial({vertexColors:true,blending:THREE.AdditiveBlending,
                                        transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false});
 
@@ -2568,6 +2598,8 @@ function init(mode){
   toast(loaded?'已载入存档':'无限世界 · 每 20 秒自动存档');
 }
 document.getElementById('go').addEventListener('click',function(){try{init('auto');}catch(e){showErr(e);}});
+var goLand=document.getElementById('goLand');
+if(goLand) goLand.addEventListener('click',function(){ try{ setLandscape(true); }catch(e){} try{init('auto');}catch(e){showErr(e);} });
 document.getElementById('loadBtn').addEventListener('click',function(){try{init('load');}catch(e){showErr(e);}});
 document.getElementById('newBtn').addEventListener('click',function(){try{localStorage.removeItem(SAVE_KEY);init('new');}catch(e){showErr(e);}});
 

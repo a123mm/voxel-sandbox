@@ -289,6 +289,13 @@ setTimeout(() => {
     const under = mob1.map(m => M.getBlock(Math.floor(m.x), Math.floor(m.y) - 1, Math.floor(m.z)));
     check('生物脚下有方块', under.every(b => b !== 0), under.join(','));
 
+    console.log('===== 0t) 横屏 =====');
+    check('有横屏函数', typeof M.setLandscape === 'function');
+    M.setLandscape(true);
+    check('切横屏不报错(无 orientation API 时降级)', document.getElementById('err').style.display !== 'block');
+    M.setLandscape(false);
+    check('竖屏恢复不报错', document.getElementById('err').style.display !== 'block');
+
     console.log('===== 0s) 云/手持/彩花/成就 =====');
     check('天上有云', M.clouds > 0, '云=' + M.clouds);
     check('有第一人称手持模型', M.hand === true);
