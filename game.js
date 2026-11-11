@@ -365,6 +365,7 @@ try{ if(typeof window!=='undefined') window.__gameMeta={
   get mobs(){return mobs.length;},
   get clouds(){return clouds.length;}, get hand(){return !!handMesh;},
   get landscape(){return isLandscapeLocked();}, setLandscape:setLandscape,
+  isOpaque:function(t){return isOpaqueBlock(t);},
   advance:function(id,n,sub){advance(id,n,sub);},
   mobSnapshot:function(){
     return mobs.map(function(m){return {type:m.type,x:+m.x.toFixed(2),y:+m.y.toFixed(2),z:+m.z.toFixed(2),
@@ -1079,7 +1080,7 @@ function aoAt(x,y,z,n,vx,vy,vz){
   return 0.60+((s1&&s2)?0:(3-(s1+s2+cc)))*0.1333;
 }
 
-function isOpaqueBlock(t){ return t!==B.AIR && !NON_OPAQUE[t]; }
+function isOpaqueBlock(t){ return t!==B.AIR && !NON_OPAQUE[t] && !isPlant(t); }
 function isPlant(t){ return t===B.FLOWER || t===B.TALLGRASS || t===B.TORCH || t===B.FLOWER_Y || t===B.FLOWER_B; }
 // 花的染色(顶点色乘上去,不额外占图集)
 var FLOWER_TINT={};
@@ -2319,7 +2320,12 @@ function bindPause(){
     else if(act==='time'){ setTimeOfDay(parseFloat(v)); }
     else if(act==='rd'){ setRenderDist(RENDER_R+parseInt(v,10)); }
     else if(act==='theme'){ cycleTheme(); }
-    else if(act==='menu'){ saveGame(true); try{ location.reload(); }catch(e){} }
+    else if(act==='menu'){
+      saveGame(true);
+      try{ if(screen.orientation&&screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
+      try{ if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen(); }catch(e){}
+      setTimeout(function(){ try{ location.reload(); }catch(e){} }, 150);
+    }
   });
   var imp=document.getElementById('importFile');
   if(imp) imp.addEventListener('change',function(){ importSaveFile(imp.files&&imp.files[0]); });

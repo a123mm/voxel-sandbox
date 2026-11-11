@@ -86,6 +86,20 @@
   .icon { width:100%; height:100%; background-size:cover; image-rendering:pixelated; border-radius:3px; }
   .cnt { position:absolute; right:2px; bottom:0; font-size:9px; font-weight:700;
          color:#fff; text-shadow:0 1px 2px #000; pointer-events:none; }
+  /* 横屏/小屏:面板不能超出屏幕,超出可滚动(否则按钮点不到会像"卡住") */
+  #craft, #bag, #pause { max-height:88vh; overflow-y:auto; }
+  @media (max-height:520px){
+    #start h1 { font-size:18px; margin-bottom:4px; }
+    #start p { font-size:10px; margin:1px 0; }
+    #start button { margin-top:8px; padding:8px 22px; font-size:13px; }
+    #pause .prow { margin-bottom:5px; }
+    #pause button { padding:7px 10px; font-size:11px; }
+    #craft, #bag, #pause { max-height:92vh; padding:8px; }
+    #hotbar .slot { width:30px; height:30px; }
+    .icon { width:24px; height:24px; }
+    #hearts { bottom:56px; }
+    #airbar { bottom:76px; }
+  }
   #craft { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
            width:min(92vw,400px); background:rgba(22,22,26,.95); border:2px solid rgba(255,255,255,.25);
            border-radius:12px; padding:12px; display:none; pointer-events:auto; color:#fff; z-index:60; }
@@ -216,7 +230,7 @@
     el.textContent = '出错了:\n' + m + '\n' + (s||'') + ':' + l + ':' + c + (e && e.stack ? '\n' + e.stack : '');
   };
 </script>
-<script src="three.min.js?v=28"></script>
-<script src="game.js?v=28"></script>
+<script src="three.min.js?v=29"></script>
+<script src="game.js?v=29"></script>
 </body>
 </html>

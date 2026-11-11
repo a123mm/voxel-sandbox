@@ -289,6 +289,12 @@ setTimeout(() => {
     const under = mob1.map(m => M.getBlock(Math.floor(m.x), Math.floor(m.y) - 1, Math.floor(m.z)));
     check('生物脚下有方块', under.every(b => b !== 0), under.join(','));
 
+    console.log('===== 0u) 透视修复 =====');
+    check('黄花/蓝花不算不透明(地面不会被剔除)', M.isOpaque(M.B.FLOWER_Y) === false && M.isOpaque(M.B.FLOWER_B) === false);
+    check('普通花草不算不透明', M.isOpaque(M.B.FLOWER) === false && M.isOpaque(M.B.TALLGRASS) === false);
+    check('石头仍然是实心的', M.isOpaque(M.B.STONE) === true && M.isOpaque(M.B.DIRT) === true);
+    check('火把不算不透明', M.isOpaque(M.B.TORCH) === false);
+
     console.log('===== 0t) 横屏 =====');
     check('有横屏函数', typeof M.setLandscape === 'function');
     M.setLandscape(true);
