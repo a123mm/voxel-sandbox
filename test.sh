@@ -7,7 +7,7 @@ echo "  ✅ game.js 语法 OK"
 python3 tools/check_undeclared.py game.js || exit 1
 echo
 fail=0
-for t in round pack classic; do
+for t in mc16 round pack classic; do
   echo "===== DOM 行为测试:主题 $t ====="
   THEME=$t node test.js || fail=1
   echo
@@ -24,5 +24,5 @@ if [ -n "$SOAK" ]; then
   SOAK=1 THEME=round node test.js || fail=1
 fi
 echo
-if [ "$fail" = "0" ]; then echo "🎉 全部通过(3 个主题)"; else echo "❌ 有失败"; fi
+if [ "$fail" = "0" ]; then echo "🎉 全部通过(4 个主题)"; else echo "❌ 有失败"; fi
 exit $fail

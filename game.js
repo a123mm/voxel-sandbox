@@ -310,7 +310,7 @@ function setBlock(x,y,z,v){
 var THEME=(function(){
   var t='round';
   try{ var m=/[?&]theme=([a-z0-9_]+)/i.exec(String((typeof location!=='undefined'&&location.search)||'')); if(m) t=m[1].toLowerCase(); }catch(e){}
-  return (t==='classic'||t==='pack')?t:'round';
+  return (t==='classic'||t==='pack'||t==='round')?t:'mc16';
 })();
 // 供测试/调试读取(严格模式下 eval 的 var 不会挂到 window)
 try{ if(typeof window!=='undefined') window.__gameMeta={
@@ -385,8 +385,8 @@ try{ if(typeof window!=='undefined') window.__gameMeta={
   get sel(){return selected;},
   getBlock:function(x,y,z){return getBlock(x,y,z);}
 }; }catch(e){}
-var THEME_NAME={round:'原创圆润',pack:'手绘 CC0',classic:'经典 CC'};
-var THEME_NEXT={round:'pack',pack:'classic',classic:'round'};
+var THEME_NAME={mc16:'原版观感 16×16',round:'原创圆润',pack:'手绘 CC0',classic:'经典 CC'};
+var THEME_NEXT={mc16:'round',round:'pack',pack:'classic',classic:'mc16'};
 function cycleTheme(){
   var t=THEME_NEXT[THEME]||'round';
   try{ if(typeof saveGame==='function'){ try{ saveGame(); }catch(e){} } }catch(e){}
@@ -395,7 +395,7 @@ function cycleTheme(){
     location.href=(t==='round')?base:(base+'?theme='+t);
   }catch(e){}
 }
-var TILES=16, TILE_PX=(THEME==='pack'?128:(THEME==='classic'?16:32)), atlasCanvas=null, atlasTex=null;
+var TILES=16, TILE_PX=(THEME==='pack'?128:((THEME==='classic'||THEME==='mc16')?16:32)), atlasCanvas=null, atlasTex=null;
 var TILE_OF={};
 TILE_OF[B.GRASS]={top:0,side:1,bottom:2};
 TILE_OF[B.DIRT]={top:2,side:2,bottom:2};
@@ -665,11 +665,108 @@ function drawNoiseTile(ctx,ti,baseHex,amp,seed,opts){
     ctx.fillStyle='rgb('+(r|0)+','+(g|0)+','+(b|0)+')'; ctx.fillRect(x,oy+y,1,1);
   }
 }
+// ===== 原版观感 16×16(配色与噪点规律仿原版,像素全部程序生成) =====
+function drawMc16Atlas(ctx){
+  var S=16;
+  function T(ti,fn){ for(var y=0;y<S;y++) for(var x=0;x<S;x++){
+    var c=fn(x,y); if(!c) continue;
+    ctx.fillStyle='rgb('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+')';
+    ctx.fillRect(x,ti*S+y,1,1); } }
+  function n(x,y,seed){ return prand(seed+x*131+y*977)-0.5; }
+  function jit(c,x,y,seed,amp){ var k=1+n(x,y,seed)*(amp||0.18); return [c[0]*k,c[1]*k,c[2]*k]; }
+  var GRASS=[127,178,56], DIRT=[139,107,69], STONE=[127,127,127], SAND=[219,211,160];
+  var LOG=[109,76,47], WOOD=[184,148,95], LEAF=[76,122,52];
+  // 0 草顶
+  T(0,function(x,y){ var c=jit(GRASS,x,y,7,0.22); if(n(x,y,31)>0.34) c=[c[0]*0.86,c[1]*0.93,c[2]*0.78]; return c; });
+  // 1 草侧
+  T(1,function(x,y){
+    var edge=4+(prand(x*17+3)>0.5?1:0);
+    if(y<edge) return jit(GRASS,x,y,9,0.22);
+    if(y===edge) return [86,120,44];
+    return jit(DIRT,x,y,11,0.2);
+  });
+  // 2 泥土
+  T(2,function(x,y){ var c=jit(DIRT,x,y,13,0.22);
+    if(n(x,y,41)>0.36) c=[c[0]*0.84,c[1]*0.82,c[2]*0.82]; return c; });
+  // 3 石头
+  T(3,function(x,y){ var c=jit(STONE,x,y,17,0.16);
+    if(n(x,y,53)>0.40) c=[c[0]*0.86,c[1]*0.86,c[2]*0.86];
+    if(n(x,y,67)<-0.42) c=[c[0]*1.1,c[1]*1.1,c[2]*1.1]; return c; });
+  // 4 沙子
+  T(4,function(x,y){ var c=jit(SAND,x,y,19,0.10);
+    if(n(x,y,71)>0.42) c=[c[0]*0.93,c[1]*0.92,c[2]*0.86]; return c; });
+  // 5 原木侧(竖纹)
+  T(5,function(x,y){ var c=jit(LOG,x,y,23,0.16);
+    var col=Math.floor(x/4);
+    if(x%4===0) c=[c[0]*0.82,c[1]*0.82,c[2]*0.82];
+    if(prand(col*31+y*7)>0.72) c=[c[0]*0.88,c[1]*0.9,c[2]*0.86]; return c; });
+  // 6 树叶
+  T(6,function(x,y){ var c=jit(LEAF,x,y,29,0.28);
+    if(n(x,y,83)>0.30) c=[c[0]*0.66,c[1]*0.72,c[2]*0.6];
+    if(n(x,y,97)<-0.36) c=[c[0]*1.14,c[1]*1.1,c[2]*1.1]; return c; });
+  // 7 木板(每 4px 一条板)
+  T(7,function(x,y){ var row=Math.floor(y/4), c=jit(WOOD,x,y,31+row,0.10);
+    if(y%4===0) c=[c[0]*0.76,c[1]*0.74,c[2]*0.7];
+    if((x+row*5)%9===0) c=[c[0]*0.9,c[1]*0.88,c[2]*0.84];
+    return c; });
+  // 8 原木顶(年轮)
+  T(8,function(x,y){ var d=Math.hypot(x-7.5,y-7.5);
+    var ring=Math.sin(d*1.9)*0.5+0.5;
+    var c=[LOG[0]+ring*38, LOG[1]+ring*34, LOG[2]+ring*26];
+    return jit(c,x,y,37,0.10); });
+  // 9/10 矿石
+  function ore(seed,col){ return function(x,y){
+    var c=jit(STONE,x,y,41,0.16);
+    for(var i=0;i<4;i++){
+      var cx=3+prand(seed+i*7.1)*10, cy=3+prand(seed+i*11.3)*10;
+      if(Math.hypot(x-cx,y-cy)<1.9) return jit(col,x,y,seed+i,0.18);
+    }
+    return c; }; }
+  T(9,ore(101,[40,40,44]));    // 煤矿
+  T(10,ore(131,[216,175,147])); // 铁矿
+  // 11 圆石
+  T(11,function(x,y){
+    var c=jit([142,142,142],x,y,43,0.16);
+    var gx=Math.floor(x/4), gy=Math.floor(y/4);
+    var ex=x%4, ey=y%4;
+    if(ex===0||ey===0) c=[c[0]*0.78,c[1]*0.78,c[2]*0.78];
+    else if(ex===1&&ey===1) c=[c[0]*1.12,c[1]*1.12,c[2]*1.12];
+    else if(prand(gx*13+gy*7)>0.7) c=[c[0]*0.9,c[1]*0.9,c[2]*0.9];
+    return c; });
+  // 12 工作台
+  T(12,function(x,y){ var c=jit(WOOD,x,y,47,0.08);
+    if(y<2||y>13||x<2||x>13) c=[c[0]*0.72,c[1]*0.7,c[2]*0.66];
+    if(x===5||x===10||y===5||y===10) c=[c[0]*0.8,c[1]*0.78,c[2]*0.74];
+    if(x>=6&&x<=9&&y>=6&&y<=9) c=[92,74,52];
+    return c; });
+  // 13 石砖
+  T(13,function(x,y){
+    var row=Math.floor(y/4), off=(row%2)?4:0;
+    var bx=(x+off)%8, by=y%4;
+    if(bx===0||by===0) return jit([168,168,160],x,y,53,0.08);
+    return jit([150,84,68],x,y,57,0.12); });
+  // 14 玻璃
+  T(14,function(x,y){
+    if(x===0||y===0||x===15||y===15) return [206,232,240];
+    if((x===1||y===1)&&x<8&&y<8) return [230,246,252];
+    if(x+y===18&&x>4&&x<11) return [235,248,252];
+    return null; });
+  // 15 羊毛
+  T(15,function(x,y){
+    var c=jit([232,228,220],x,y,61,0.06);
+    var ex=Math.min(x%4,3-x%4), ey=Math.min(y%4,3-y%4), e=Math.min(ex,ey);
+    if(e===0) c=[c[0]*0.9,c[1]*0.9,c[2]*0.9];
+    else if(e===1&&x%4>1&&y%4>1) c=[c[0]*1.05,c[1]*1.05,c[2]*1.05];
+    return c; });
+}
+
 function makeAtlas(){
   atlasCanvas=document.createElement('canvas');
   atlasCanvas.width=TILE_PX; atlasCanvas.height=TILE_PX*TILES;
   var ctx=atlasCanvas.getContext('2d');
-  if(THEME==='classic'){
+  if(THEME==='mc16'){
+    drawMc16Atlas(ctx);
+  } else if(THEME==='classic'){
   drawNoiseTile(ctx,0,'#6abe30',34,11);
   drawNoiseTile(ctx,1,'#8b6b45',30,23,{topGrass:'#6abe30'});
   drawNoiseTile(ctx,2,'#8b6b45',30,37);
@@ -1129,6 +1226,26 @@ function buildChunkMesh(cx,cz){
           var lv=lightAt(x+F.d[0], y+F.d[1], z+F.d[2]);
           if(lv>0) lit=lv/LIGHT_MAX;
         }
+        // 顶点光照:面外那格 + 面内相邻 3 格取平均(平滑过渡)
+        var vlit=[0,0,0,0];
+        if(kind===0 && lit>0){
+          var axes2=[]; if(F.d[0]===0)axes2.push(0); if(F.d[1]===0)axes2.push(1); if(F.d[2]===0)axes2.push(2);
+          var px0=x+F.d[0], py0=y+F.d[1], pz0=z+F.d[2];
+          for(var vi0=0;vi0<4;vi0++){
+            var vv0=F.v[vi0], sum=lightAt(px0,py0,pz0), cnt=1;
+            if(axes2.length===2){
+              var a0=axes2[0], b0=axes2[1];
+              var da=(a0===0?vv0[0]:(a0===1?vv0[1]:vv0[2]))>0.5?1:-1;
+              var db=(b0===0?vv0[0]:(b0===1?vv0[1]:vv0[2]))>0.5?1:-1;
+              var o1=[0,0,0], o2=[0,0,0], oc=[0,0,0];
+              o1[a0]=da; o2[b0]=db; oc[a0]=da; oc[b0]=db;
+              sum+=lightAt(px0+o1[0],py0+o1[1],pz0+o1[2]); cnt++;
+              sum+=lightAt(px0+o2[0],py0+o2[1],pz0+o2[2]); cnt++;
+              sum+=lightAt(px0+oc[0],py0+oc[1],pz0+oc[2]); cnt++;
+            }
+            vlit[vi0]=(sum/cnt)/LIGHT_MAX;
+          }
+        }
         var P=pos,C=col,I=ind,U=uv;
         if(kind===2){ P=wpos; C=wcol; I=wind; U=null; }
         else if(kind===1){ P=gpos; C=gcol; I=gind; U=guv; }
@@ -1142,7 +1259,8 @@ function buildChunkMesh(cx,cz){
           if(kind===2){ C.push(WATER_R*shade,WATER_G*shade,WATER_B*shade); }
           else{
             var sh = (kind===1) ? shade*0.95 : shade*aoAt(x,y,z,F.d,vv[0],vv[1],vv[2]);
-            if(lit>0.02){ var b1=sh*(1+lit*0.55); C.push(b1*(1+lit*0.14), b1*(1+lit*0.07), b1); }
+            var lvx=(kind===0)?vlit[vi]:lit;
+            if(lvx>0.02){ var b1=sh*(1+lvx*0.55); C.push(b1*(1+lvx*0.14), b1*(1+lvx*0.07), b1); }
             else C.push(sh,sh,sh);
             var uu,vv2;
             if(F.d[1]!==0){ uu=vv[0]; vv2=vv[2]; }
@@ -1365,9 +1483,31 @@ function setMinimap(on){
 
 // ===================== 生命 / 伤害 =====================
 var health=20, maxHealth=20, airSec=0, hurtAcc=0, lastHurtAt=-999, regenAcc=0;
+var hunger=20, maxHunger=20, hungerAcc=0, xp=0, xpLevel=0, xpAcc=0;
 var fallTop=null, deathShown=false, spawnPt={x:8.5,y:20,z:8.5};
 function nowSec(){ return (typeof performance!=='undefined'&&performance.now?performance.now():Date.now())/1000; }
 function fallDamage(drop){ return drop>3.6 ? Math.min(18, Math.floor(drop-3.4)) : 0; }
+function hungerUi(){
+  var box=document.getElementById('hunger'); if(!box) return;
+  var html='';
+  for(var i=0;i<10;i++){
+    var v=Math.max(0,Math.min(2,hunger-i*2));
+    html+='<span class="hpb food"><span class="hpf" style="width:'+(v*50)+'%"></span></span>';
+  }
+  box.innerHTML=html;
+  var bar=document.getElementById('xpbar');
+  if(bar){
+    var need=10, have=xp%need;
+    bar.style.display='block';
+    bar.firstChild.style.width=(have/need*100)+'%';
+    var lv=document.getElementById('xplevel');
+    if(lv) lv.textContent=xpLevel>0?String(xpLevel):'';
+  }
+}
+function gainXp(n){
+  xp+=n; xpLevel=Math.floor(Math.sqrt(xp/3));
+  hungerAcc+=0; hungerUi();
+}
 function heartsUi(){
   var box=document.getElementById('hearts'); if(!box) return;
   var html='';
@@ -1669,6 +1809,7 @@ function doBreak(){
   else if(t===B.COAL) advance('coal', ADV.coal[0], ADV.coal[1]);
   else if(t===B.IRON) advance('iron', ADV.iron[0], ADV.iron[1]);
   if(t!==B.WATER) invAdd(t,1);
+  gainXp(1);
 }
 function doPlace(){
   var hit=raycast(6); if(!hit) return;
@@ -1739,7 +1880,8 @@ function openBag(){
     function doEat(e){ if(e){e.preventDefault();e.stopPropagation();}
       if(invCount(B.PORK)<=0){ toast('没有肉了'); return; }
       invTake(B.PORK,1);
-      health=Math.min(maxHealth, health+4); heartsUi();
+      health=Math.min(maxHealth, health+4);
+      hunger=Math.min(maxHunger, hunger+6); heartsUi(); hungerUi();
       sfxCraft(); toast('吃掉了肉，回复 4 点血');
       openBag();
     }
@@ -1779,7 +1921,8 @@ function openBag(){
     function eatPork(e){ if(e){e.preventDefault();e.stopPropagation();}
       if(invCount(B.PORK)<=0) return;
       if(health>=maxHealth){ toast('血量已满,先留着吧'); return; }
-      invTake(B.PORK,1); health=Math.min(maxHealth,health+4); heartsUi();
+      invTake(B.PORK,1); health=Math.min(maxHealth,health+4);
+      hunger=Math.min(maxHunger,hunger+6); heartsUi(); hungerUi();
       sfxCraft(); toast('吃掉了肉,回复 4 点血'); openBag();
     }
     fd.addEventListener('pointerdown', eatPork);
@@ -2509,7 +2652,11 @@ function loop(t){
     updateClouds(dt);
     updateHand(dt);
     mapAcc+=dt; if(mapAcc>=0.35){ mapAcc=0; drawMinimap(); }
-    if(health>0 && health<maxHealth && nowSec()-lastHurtAt>12){
+    // 饥饿:走路掉、静止慢回
+    var movingNow=(Math.abs(player.vel.x)+Math.abs(player.vel.z))>0.7;
+    if(movingNow){ hungerAcc+=dt; if(hungerAcc>26){ hungerAcc=0; if(hunger>0){ hunger=Math.max(0,hunger-1); hungerUi(); } } }
+    if(hunger<=0){ xpAcc+=dt; if(xpAcc>4){ xpAcc=0; hurt(1,'饥饿'); } }
+    if(health>0 && health<maxHealth && hunger>=16 && nowSec()-lastHurtAt>12){
       regenAcc+=dt; if(regenAcc>4){ regenAcc=0; health=Math.min(maxHealth,health+1); heartsUi(); }
     }
     streamChunks(false);
@@ -2573,7 +2720,7 @@ function init(mode){
   var sp=terrainAt(sx,sz);
   if(!loaded) player.pos.y=sp.h+1.2;
   spawnPt={x:player.pos.x,y:player.pos.y,z:player.pos.z};
-  heartsUi();
+  heartsUi(); hungerUi();
   initMobs();
   camera.position.set(player.pos.x,player.pos.y+EYE,player.pos.z);
 

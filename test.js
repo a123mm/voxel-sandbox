@@ -150,7 +150,7 @@ function check(name, cond, extra) {
   else { console.log('  ❌ ' + name + (extra ? '  (' + extra + ')' : '')); fails++; }
 }
 
-const EXPECT = { round: 32, pack: 128, classic: 16 };
+const EXPECT = { mc16: 16, round: 32, pack: 128, classic: 16 };
 
 setTimeout(() => {
   const meta = window.__gameMeta || {};
@@ -288,6 +288,14 @@ setTimeout(() => {
     check('生物没掉出世界', mob1.every(m => m.y > -1 && m.y < 40), JSON.stringify(mob1[0]));
     const under = mob1.map(m => M.getBlock(Math.floor(m.x), Math.floor(m.y) - 1, Math.floor(m.z)));
     check('生物脚下有方块', under.every(b => b !== 0), under.join(','));
+
+    console.log('===== 0v) 原版观感 / 饥饿 / 经验 =====');
+    check('主题按 URL 生效', M.theme === THEME, M.theme);
+    check('饥饿条有 10 格', document.querySelectorAll('#hunger .hpb').length === 10,
+      'n=' + document.querySelectorAll('#hunger .hpb').length);
+    check('经验条可见', document.getElementById('xpbar').style.display === 'block');
+    M.dig();
+    check('挖方块后 HUD 仍在', document.querySelectorAll('#hunger .hpb').length === 10);
 
     console.log('===== 0u) 透视修复 =====');
     check('黄花/蓝花不算不透明(地面不会被剔除)', M.isOpaque(M.B.FLOWER_Y) === false && M.isOpaque(M.B.FLOWER_B) === false);
