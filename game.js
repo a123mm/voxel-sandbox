@@ -366,6 +366,7 @@ try{ if(typeof window!=='undefined') window.__gameMeta={
   get clouds(){return clouds.length;}, get hand(){return !!handMesh;},
   get landscape(){return isLandscapeLocked();}, setLandscape:setLandscape,
   isOpaque:function(t){return isOpaqueBlock(t);},
+  flowFrom:function(x,y,z){return flowFrom(x,y,z);},
   advance:function(id,n,sub){advance(id,n,sub);},
   mobSnapshot:function(){
     return mobs.map(function(m){return {type:m.type,x:+m.x.toFixed(2),y:+m.y.toFixed(2),z:+m.z.toFixed(2),
@@ -1355,6 +1356,38 @@ function streamChunks(force){
   });
 }
 
+// ===================== 水的流动(有界 BFS,只在编辑附近跑) =====================
+function spreadWater(x,y,z,depth){
+  depth=depth||0;
+  if(depth>6) return 0;
+  var queue=[[x,y,z,depth]], seen={}, n=0;
+  while(queue.length && n<64){
+    var cur=queue.shift(), cx=cur[0], cy=cur[1], cz=cur[2], d=cur[3];
+    var key=cx+','+cy+','+cz; if(seen[key]) continue; seen[key]=1;
+    // 往下流
+    if(cy>0 && getBlock(cx,cy-1,cz)===B.AIR){ setBlock(cx,cy-1,cz,B.WATER); n++; queue.push([cx,cy-1,cz,d]); }
+    // 同层向四周(只有下方是实心时才铺开,避免无限蔓延)
+    if(d<4 && cy>0 && SOLID[getBlock(cx,cy-1,cz)]){
+      var dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+      for(var i=0;i<4;i++){
+        var nx=cx+dirs[i][0], nz=cz+dirs[i][1];
+        if(getBlock(nx,cy,nz)===B.AIR){ setBlock(nx,cy,nz,B.WATER); n++; queue.push([nx,cy,nz,d+1]); }
+      }
+    }
+  }
+  return n;
+}
+function flowFrom(x,y,z){
+  var n=0;
+  if(getBlock(x,y,z)===B.WATER) n+=spreadWater(x,y,z,0);   // 自己就是水源
+  var dirs=[[1,0,0],[-1,0,0],[0,1,0],[0,0,1],[0,0,-1]];
+  for(var i=0;i<5;i++){
+    var b=getBlock(x+dirs[i][0],y+dirs[i][1],z+dirs[i][2]);
+    if(b===B.WATER) n+=spreadWater(x+dirs[i][0],y+dirs[i][1],z+dirs[i][2],0);
+  }
+  return n;
+}
+
 // ===================== 玩家 =====================
 var player={pos:new THREE.Vector3(8.5,20,8.5),vel:new THREE.Vector3(),yaw:0,pitch:0,onGround:false,fly:false};
 var EYE=1.62,HALF=0.30,PH=1.80,GRAVITY=28,JUMP_V=8.8,SPEED=4.8,FLY_SPEED=9;
@@ -1393,15 +1426,15 @@ function updatePlayer(dt){
   var sinY=Math.sin(player.yaw),cosY=Math.cos(player.yaw);
   var sprinting=!player.fly && (keys['ControlLeft']||keys['ControlRight']);
   var bodyWater=getBlock(Math.floor(p.x),Math.floor(p.y+0.9),Math.floor(p.z))===B.WATER;
-  var sp=(player.fly?FLY_SPEED:SPEED)*(sprinting?1.55:1)*(bodyWater?0.55:1);
+  var sp=(player.fly?FLY_SPEED:SPEED)*(sprinting?1.55:1)*(bodyWater?0.72:1);
   v.x=(-sinY*fwd+cosY*side)*sp; v.z=(-cosY*fwd-sinY*side)*sp;
   if(player.fly){ v.y=0;
     if(keys['Space']||touchUp) v.y=FLY_SPEED;
     if(keys['ShiftLeft']||touchDown) v.y=-FLY_SPEED;
   } else if(bodyWater){
-    // 游泳:轻微下沉,空格上浮,入水不摔伤
+    // 游泳:轻微下沉,空格上浮(够高,能爬上岸),入水不摔伤
     v.y-=GRAVITY*0.18*dt; if(v.y<-3.2)v.y=-3.2;
-    if(keys['Space']||touchUp) v.y=3.4;
+    if(keys['Space']||touchUp) v.y=4.8;
     player.onGround=false; fallTop=null;
   } else {
     v.y-=GRAVITY*dt; if(v.y<-55)v.y=-55;
@@ -1856,6 +1889,7 @@ function doBreak(){
   }
   crackTarget=null; crackProg=0; updateCrack();
   setBlock(hit.x,hit.y,hit.z,B.AIR);
+  flowFrom(hit.x,hit.y,hit.z);
   sfxBreak(t);
   if(t===B.WOOD) advance('wood', ADV.wood[0], ADV.wood[1]);
   else if(t===B.COAL) advance('coal', ADV.coal[0], ADV.coal[1]);
@@ -1880,6 +1914,7 @@ function doPlace(){
   var p=player.pos;
   if(!(x+1<=p.x-HALF||x>=p.x+HALF||z+1<=p.z-HALF||z>=p.z+HALF||y+1<=p.y||y>=p.y+PH)) return;
   setBlock(x,y,z,bt); invTake(bt,1); sfxPlace(bt);
+  if(bt===B.WATER) flowFrom(x,y,z);
   if(bt===B.TORCH) advance('torch', ADV.torch[0], ADV.torch[1]);
 }
 // 短点:对准工作台就打开合成,否则放置方块

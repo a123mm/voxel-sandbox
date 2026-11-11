@@ -289,6 +289,16 @@ setTimeout(() => {
     const under = mob1.map(m => M.getBlock(Math.floor(m.x), Math.floor(m.y) - 1, Math.floor(m.z)));
     check('生物脚下有方块', under.every(b => b !== 0), under.join(','));
 
+    console.log('===== 0w) 水流动 =====');
+    const wx2 = 84, wz2 = 84, wy2 = M.topAt(wx2, wz2).h + 1;
+    for (let yy = wy2; yy <= wy2 + 2; yy++) for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++)
+      M.setBlock(wx2 + dx, yy, wz2 + dz, 0);
+    for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) M.setBlock(wx2 + dx, wy2 - 1, wz2 + dz, M.B.STONE);
+    M.setBlock(wx2, wy2, wz2, M.B.WATER);
+    const flowed = M.flowFrom(wx2, wy2, wz2);
+    check('水会向四周流', flowed > 0, '扩散格数=' + flowed);
+    check('相邻格变成水', M.getBlock(wx2 + 1, wy2, wz2) === M.B.WATER || M.getBlock(wx2, wy2, wz2 + 1) === M.B.WATER);
+
     console.log('===== 0v) 原版观感 / 饥饿 / 经验 =====');
     check('主题按 URL 生效', M.theme === THEME, M.theme);
     check('饥饿条有 10 格', document.querySelectorAll('#hunger .food').length === 10,

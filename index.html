@@ -109,7 +109,9 @@
     #hotbar .slot { width:30px; height:30px; }
     .icon { width:24px; height:24px; }
     #hearts { bottom:56px; }
-    #hunger { bottom:56px; right:8px; }
+    /* 窄屏:鸡腿放到心上方右侧,别和心/经验条挤在一起 */
+    #hunger { bottom:86px; right:8px; }
+    #xpbar { bottom:48px; width:60vw; }
     #airbar { bottom:76px; }
   }
   #craft { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
@@ -246,7 +248,7 @@
     el.textContent = '出错了:\n' + m + '\n' + (s||'') + ':' + l + ':' + c + (e && e.stack ? '\n' + e.stack : '');
   };
 </script>
-<script src="three.min.js?v=31"></script>
-<script src="game.js?v=31"></script>
+<script src="three.min.js?v=32"></script>
+<script src="game.js?v=32"></script>
 </body>
 </html>
