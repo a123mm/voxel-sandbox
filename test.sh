@@ -1,9 +1,10 @@
 #!/data/data/com.termux/files/usr/bin/sh
 # 每次改完都跑这个:语法检查 + 三种材质主题的 DOM 测试 + 贴图渲染自检
 cd "$(dirname "$0")" || exit 1
-echo "===== 1/4 语法检查 ====="
+echo "===== 1/4 语法 + 未声明变量检查 ====="
 node --check game.js || exit 1
 echo "  ✅ game.js 语法 OK"
+python3 tools/check_undeclared.py game.js || exit 1
 echo
 fail=0
 for t in round pack classic; do

@@ -2080,7 +2080,7 @@ function updateClouds(dt){
 }
 
 // ===================== 第一人称手持方块 =====================
-var handMesh=null, handArm=null, handMat=null, handBob=0, handSwing=0;
+var handMesh=null, handArm=null, handMat=null, handGeo=null, handBob=0, handSwing=0;
 function initHand(){
   scene.add(camera);                    // 相机要在场景里,它的子节点才渲染
   handGeo=new THREE.PlaneGeometry(0.62,0.62);
