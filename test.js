@@ -206,7 +206,7 @@ setTimeout(() => {
     M.player.pitch = -1.45; M.player.yaw = 0;
     M.syncCamera();
     const invBefore = (M.inv[M.B.GRASS] || 0);
-    M.dig();
+    for (let i = 0; i < 3; i++) M.dig();
     check('挖掉了脚下方块', M.getBlock(8, hg, 8) === 0, 'block=' + M.getBlock(8, hg, 8));
     check('挖掉后进背包', (M.inv[M.B.GRASS] || 0) === invBefore + 1, 'grass=' + M.inv[M.B.GRASS]);
     M.syncCamera();
@@ -291,11 +291,11 @@ setTimeout(() => {
 
     console.log('===== 0v) 原版观感 / 饥饿 / 经验 =====');
     check('主题按 URL 生效', M.theme === THEME, M.theme);
-    check('饥饿条有 10 格', document.querySelectorAll('#hunger .hpb').length === 10,
-      'n=' + document.querySelectorAll('#hunger .hpb').length);
+    check('饥饿条有 10 格', document.querySelectorAll('#hunger .food').length === 10,
+      'n=' + document.querySelectorAll('#hunger .food').length);
     check('经验条可见', document.getElementById('xpbar').style.display === 'block');
     M.dig();
-    check('挖方块后 HUD 仍在', document.querySelectorAll('#hunger .hpb').length === 10);
+    check('挖方块后 HUD 仍在', document.querySelectorAll('#hunger .food').length === 10);
 
     console.log('===== 0u) 透视修复 =====');
     check('黄花/蓝花不算不透明(地面不会被剔除)', M.isOpaque(M.B.FLOWER_Y) === false && M.isOpaque(M.B.FLOWER_B) === false);

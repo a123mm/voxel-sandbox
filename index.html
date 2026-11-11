@@ -22,8 +22,9 @@
   .hpb { position:relative; color:#4a1c1a; }
   .hpb .hpf { position:absolute; left:0; top:0; overflow:hidden; white-space:nowrap; color:#e8402f; }
   #hunger { position:absolute; right:12px; bottom:66px; display:flex; gap:1px; }
-  .hpb.food { background-image:var(--food-empty); }
-  .hpb.food .hpf { background-image:var(--food-full); }
+  .food { font-size:15px; line-height:1; filter:none; }
+  .food.half { opacity:.55; }
+  .food.empty { opacity:.22; filter:grayscale(1); }
   #xpbar { position:absolute; left:50%; bottom:56px; transform:translateX(-50%);
            width:min(68vw,320px); height:6px; background:rgba(0,0,0,.55);
            border:1px solid #000; display:none; overflow:hidden; }
@@ -245,7 +246,7 @@
     el.textContent = '出错了:\n' + m + '\n' + (s||'') + ':' + l + ':' + c + (e && e.stack ? '\n' + e.stack : '');
   };
 </script>
-<script src="three.min.js?v=30"></script>
-<script src="game.js?v=30"></script>
+<script src="three.min.js?v=31"></script>
+<script src="game.js?v=31"></script>
 </body>
 </html>

@@ -1492,7 +1492,7 @@ function hungerUi(){
   var html='';
   for(var i=0;i<10;i++){
     var v=Math.max(0,Math.min(2,hunger-i*2));
-    html+='<span class="hpb food"><span class="hpf" style="width:'+(v*50)+'%"></span></span>';
+    html+='<span class="food '+(v===2?'full':(v===1?'half':'empty'))+'">🍗</span>';
   }
   box.innerHTML=html;
   var bar=document.getElementById('xpbar');
@@ -1764,6 +1764,47 @@ function updateMobs(dt){
   }
 }
 
+// ===================== 破坏裂纹(按住累积) =====================
+var crackTex=null, crackMat=null, crackMesh=null, crackTarget=null, crackProg=0;
+function makeCrackTex(){
+  var S=16, cv=document.createElement('canvas'); cv.width=S; cv.height=S*4;
+  var g=cv.getContext('2d');
+  for(var st=0; st<4; st++){
+    var n=2+st*3;
+    for(var i=0;i<n;i++){
+      var x=Math.floor(prand(st*17+i*3.1)*S), y=Math.floor(prand(st*23+i*5.7)*S);
+      var len=2+Math.floor(prand(st*31+i*7.3)*3);
+      for(var k=0;k<len;k++){
+        var xx=(x+k*(prand(st*7+i)>0.5?1:-1)+2*S)%S, yy=(y+k*1+S)%S;
+        g.fillStyle=(k===0)?'rgba(0,0,0,0.55)':'rgba(0,0,0,0.42)';
+        g.fillRect(xx,st*S+yy,1,1);
+      }
+    }
+  }
+  var t=new THREE.CanvasTexture(cv);
+  t.magFilter=THREE.NearestFilter; t.minFilter=THREE.NearestFilter; t.generateMipmaps=false;
+  t.repeat.set(1,0.25);
+  return t;
+}
+function initCracks(){
+  crackTex=makeCrackTex();
+  crackMat=new THREE.MeshBasicMaterial({map:crackTex,transparent:true,depthWrite:false,
+    polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+  crackMesh=new THREE.Mesh(new THREE.BoxGeometry(1.008,1.008,1.008),crackMat);
+  crackMesh.visible=false; scene.add(crackMesh);
+}
+function updateCrack(){
+  if(!crackMesh) return;
+  if(!crackTarget||crackProg<=0.01){ crackMesh.visible=false; return; }
+  crackMesh.visible=true;
+  crackMesh.position.set(crackTarget.x+0.5,crackTarget.y+0.5,crackTarget.z+0.5);
+  var st=Math.min(3,Math.floor(crackProg*4));
+  if(crackMat.map){
+    crackMat.map.offset.set(0, 1-(st+1)*0.25);
+    crackMat.map.needsUpdate=true;
+  }
+}
+
 // ===================== 射线 =====================
 function solidAt(x,y,z){ return SOLID[getBlock(x,y,z)]; }
 function raycast(maxDist){
@@ -1787,6 +1828,9 @@ function raycast(maxDist){
 }
 function updateHighlight(){
   var hit=raycast(6);
+  if(crackTarget && (!hit || hit.x!==crackTarget.x || hit.y!==crackTarget.y || hit.z!==crackTarget.z)){
+    crackTarget=null; crackProg=0;
+  }
   if(!hit){ highlight.visible=false; return; }
   highlight.visible=true;
   highlight.position.set(hit.x+0.5,hit.y+0.5,hit.z+0.5);
@@ -1802,8 +1846,16 @@ function doBreak(){
   if(mb && mb.t<blockT){ hurtMob(mb.mob,3); return; }
   if(!hit||hit.y<=0) return;
   var t=getBlock(hit.x,hit.y,hit.z);
+  // 简单方块(花草/火把)一发即碎;其它需要累积
+  var soft=isPlant(t)||t===B.GLASS;
+  if(!soft){
+    var same=crackTarget && crackTarget.x===hit.x && crackTarget.y===hit.y && crackTarget.z===hit.z;
+    crackProg=same?crackProg+0.34:0.34;
+    crackTarget={x:hit.x,y:hit.y,z:hit.z};
+    if(crackProg<0.999){ handSwing=1; sfxStep(); updateCrack(); return; }
+  }
+  crackTarget=null; crackProg=0; updateCrack();
   setBlock(hit.x,hit.y,hit.z,B.AIR);
-  handSwing=1;
   sfxBreak(t);
   if(t===B.WOOD) advance('wood', ADV.wood[0], ADV.wood[1]);
   else if(t===B.COAL) advance('coal', ADV.coal[0], ADV.coal[1]);
@@ -2650,6 +2702,7 @@ function loop(t){
     updateSky(dt);
     updateMobs(dt);
     updateClouds(dt);
+    updateCrack();
     updateHand(dt);
     mapAcc+=dt; if(mapAcc>=0.35){ mapAcc=0; drawMinimap(); }
     // 饥饿:走路掉、静止慢回
@@ -2705,6 +2758,7 @@ function init(mode){
   buildSky();
   updateSky(0);
   initClouds();
+  initCracks();
   initHand();
 
   var gg=new THREE.BoxGeometry(1.002,1.002,1.002);
